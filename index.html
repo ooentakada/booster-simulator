@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>応援共創シミュレーター</title>
+    <meta
+      name="description"
+      content="30人を仲間と集客するための応援共創シミュレーション。関係性、企画魅力、AI仕掛け、信頼残高を育てながらイベント出港を目指します。"
+    />
+    <meta property="og:title" content="30人を仲間と集客する 応援共創シミュレーター" />
+    <meta
+      property="og:description"
+      content="告知だけでは人は動かない。応援、相談、企画設計、信頼残高を育てるミニゲーム。"
+    />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">BOOSTER prototype</p>
+          <h1>30人を仲間と集客する 応援共創シミュレーター</h1>
+        </div>
+        <div class="week-badge">
+          <span>Week</span>
+          <strong id="week">1</strong>
+          <small>/ 12</small>
+        </div>
+      </header>
+
+      <section class="top-stage">
+        <section class="scene" aria-label="酒場と出港の様子">
+          <div class="tavern">
+            <div class="sign">BOOSTER酒場</div>
+            <div class="window"></div>
+            <div class="door"></div>
+            <div class="party" id="party"></div>
+          </div>
+          <div class="harbor">
+            <div class="sea">
+              <div class="ship" id="ship">
+                <div class="sail"></div>
+                <div class="mast"></div>
+                <div class="hull"></div>
+              </div>
+            </div>
+            <div class="vision-flag" id="learning">募集前から応援は始まっています。まずは誰かの挑戦にリアクションして、酒場に会話を増やしましょう。</div>
+          </div>
+        </section>
+
+        <aside class="panel log-panel">
+          <div class="panel-head">
+            <h2>酒場ログ</h2>
+            <span class="small-label" id="rankPreview">準備中</span>
+          </div>
+          <ol class="log" id="log"></ol>
+        </aside>
+      </section>
+
+      <section class="dashboard">
+        <aside class="panel metrics-panel">
+          <div class="panel-head">
+            <h2>出港準備</h2>
+            <button id="resetButton" class="icon-button" title="最初から">↺</button>
+          </div>
+          <div class="goal-list">
+            <div><span>参加者</span><strong id="attendees">0</strong><small>/30</small></div>
+            <div><span>応援者</span><strong id="supporters">0</strong><small>/100</small></div>
+            <div><span>運営</span><strong id="crew">0</strong><small>/3</small></div>
+            <div><span>本気</span><strong id="core">0</strong><small>/3</small></div>
+          </div>
+          <div class="status-list" id="statusList"></div>
+        </aside>
+
+        <section class="panel action-panel">
+          <div class="panel-head">
+            <div>
+              <h2>今週の行動</h2>
+              <p id="phaseText">種まき: まずは関係性の土台づくり。</p>
+            </div>
+            <div class="selection-count"><span id="selectedCount">0</span>/3</div>
+          </div>
+          <div class="cards" id="cards"></div>
+          <button id="runButton" class="primary-button" disabled>今週を実行</button>
+        </section>
+
+      </section>
+    </main>
+
+    <dialog id="resultDialog" class="result-dialog">
+      <div class="result-box">
+        <p class="eyebrow">Final Rank</p>
+        <h2 id="resultRank">Aランク</h2>
+        <h3 id="resultType">巻き込みタイプ診断</h3>
+        <p id="resultMessage"></p>
+        <p id="resultAdvice" class="result-advice"></p>
+        <div class="result-grid">
+          <div><span>参加者</span><strong id="finalAttendees">0</strong></div>
+          <div><span>応援者</span><strong id="finalSupporters">0</strong></div>
+          <div><span>運営</span><strong id="finalCrew">0</strong></div>
+          <div><span>本気メンバー</span><strong id="finalCore">0</strong></div>
+        </div>
+        <div class="result-actions">
+          <button id="copyResult" class="secondary-button">結果をコピー</button>
+          <button id="closeResult" class="primary-button">もう一度、酒場へ</button>
+        </div>
+        <p id="copyStatus" class="copy-status" aria-live="polite"></p>
+      </div>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -94,18 +94,19 @@ const cards = [
     title: "飲みに行く",
     icon: "杯",
     phase: "seed",
-    text: "酒場で一緒に飲んで、本音で語り合う。お金はかかるが関係性がぐっと深まる。",
+    text: "酒場で一緒に飲んで本音で語り合う。一気に距離が縮まり、企画のアイディアも湧く。お金はかかる。",
     apply: (s) => {
       addStat(s, "relation", 16);
       addStat(s, "trust", 10);
       addStat(s, "commitment", 5);
+      addStat(s, "concept", 6);
       s.people.supporters += roll(2, 5);
       s.multipliers.nextPost += 2;
       if (s.people.interested > 4 && chance((s.stats.relation + s.stats.commitment) / 220)) {
         s.people.crew += 1;
         addLog(s, "飲みながら本音で語り合った。『その挑戦、おれも一緒にやりたい』と、運営に近づく仲間が生まれた。");
       } else {
-        addLog(s, "酒場で一緒に飲んだ。建前が外れて、相手との関係がぐっと深まった。");
+        addLog(s, "酒場で一緒に飲んだ。建前が外れて距離が縮まり、ふと企画を面白くするアイディアも湧いた。");
       }
     },
   },
@@ -652,8 +653,8 @@ function getPhase(week = state.week) {
 function getAvailableCards() {
   const phase = getPhase();
   const cardOrder = {
-    seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
-    bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "drink", "aiRoles", "lpImprove", "comment", "announce"],
+    seed: ["react", "comment", "drink", "preConsult", "oneonone", "catchcopy", "aiConcept", "announce"],
+    bond: ["interest", "openConsult", "roles", "rewardMenu", "crewTalk", "drink", "aiRoles", "announce"],
     launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
   };
   return cardOrder[phase].map((id) => cards.find((card) => card.id === id));
@@ -840,7 +841,8 @@ function getLearning(s, chosen) {
   }
   if (ids.includes("drink")) {
     candidates.push(
-      "オンラインの応援だけでは届かない距離があります。一緒に飲んで本音で話すと、関係性は一気に深まります。",
+      "『1回飲めばマブダチ』。一度ちゃんと飲んで本音で話すと、オンラインの何十回のやり取りより一気に距離が縮まります。",
+      "飲みの席は最高の企画会議です。本音の雑談から、企画の魅力をもう一段引き上げるアイディアが生まれます。",
       "飲み代はコストではなく投資です。建前が外れた関係は、いざというとき本気で動いてくれる仲間に変わります。",
     );
   }
@@ -883,7 +885,7 @@ function getRank() {
   if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 60 && p.supporters >= 72 && p.crew >= 5 && p.core >= 4 && t >= 55) {
+  if (p.attendees >= 60 && p.supporters >= 78 && p.crew >= 5 && p.core >= 4 && t >= 55) {
     return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
   }
   if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {

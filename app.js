@@ -8,6 +8,7 @@ const initialState = {
     commitment: 0,
     ai: 0,
     reach: 0,
+    wom: 0,
     trust: 50,
   },
   people: {
@@ -22,7 +23,7 @@ const initialState = {
     nextLaunch: 0,
   },
   resources: {
-    timeMax: 10,
+    timeMax: 11,
     money: 30,
   },
   hand: [],
@@ -42,6 +43,7 @@ const pillarMeta = [
   ["relation", "関係性の影響力", "#4f8d5d"],
   ["concept", "企画の魅力", "#d95043"],
   ["ai", "AI仕掛け力", "#2f9aa0"],
+  ["wom", "口コミ力", "#e08a2b"],
   ["trust", "信頼残高", "#7b5fc6"],
 ];
 
@@ -286,6 +288,22 @@ const cards = [
     },
   },
   {
+    id: "wom",
+    title: "口コミを設計する",
+    icon: "口",
+    phase: "bond",
+    text: "何を・誰に・どう伝えてもらうか。紹介の言葉と体験談を設計する。これが無いと紹介は広がらない。",
+    apply: (s) => {
+      addStat(s, "wom", 18);
+      addStat(s, "reach", 4);
+      addStat(s, "concept", 4);
+      s.people.supporters += roll(1, 4);
+      addLog(s, s.stats.wom < 22
+        ? "口コミを設計し始めた。『何を伝えてもらうか』が言葉になると、紹介が動き出す準備が整う。"
+        : "口コミの設計を磨いた。紹介したくなる一言と体験談が揃い、仲間が広げやすくなった。");
+    },
+  },
+  {
     id: "ifRole",
     title: "もしもロール",
     icon: "if",
@@ -444,12 +462,16 @@ const cards = [
       const base = (s.stats.commitment * 0.1) + (s.stats.relation * 0.05) + (s.people.crew * 2.2) + (s.people.core * 4.2) + (s.people.supporters * 0.025);
       addStat(s, "trust", s.people.crew + s.people.core > 0 ? -4 : -8);
       const trustPenalty = s.stats.trust < 25 ? 0.55 : 1;
-      const gain = Math.max(0, Math.round((base * trustPenalty) + roll(-1, 5)));
+      // 口コミ設計の度合いで紹介の効きが変わる。設計していないと紹介はほぼ広がらない。
+      const womFactor = clamp(0.35 + s.stats.wom * 0.0085, 0.35, 1.1);
+      const gain = Math.max(0, Math.round((base * trustPenalty * womFactor) + roll(-1, 4)));
       s.people.attendees += gain;
-      s.people.supporters += roll(0, 10);
+      s.people.supporters += roll(0, 8);
       addStat(s, "reach", Math.min(8, Math.floor(gain / 2)));
-      addLog(s, gain >= 8
-        ? `仲間に紹介をお願いした。${gain}人の参加につながった。船は一人ではなく、みんなで押し出されている。`
+      addLog(s, s.stats.wom < 25
+        ? "紹介をお願いしたが、何をどう伝えればいいかが共有できておらず、あまり広がらなかった。先に口コミを設計したい。"
+        : gain >= 8
+        ? `仲間に紹介をお願いした。${gain}人の参加につながった。設計した口コミが、仲間の口を借りて広がっている。`
         : "紹介をお願いしたが、大きくは動かなかった。仲間の本気度と役割の合意をもう少し育てたい。");
     },
   },
@@ -508,34 +530,36 @@ const cards = [
 
 // 各カードのコスト。time=毎週の持ち時間消費 / money=資金消費。
 // 応援・相談・感謝などの「人間的な行動」は money:0（無料）。AI・LP・広告・会場はお金がかかる。
+// 時間: 接点・会話系=3 / 制作・AI系=4 / 重い行動=5。timeMax=11なので重い行動は週1枚まで。
 const cardCost = {
-  react: { time: 2, money: 0 },
-  comment: { time: 2, money: 0 },
-  drink: { time: 3, money: 6 },
-  spotlight: { time: 2, money: 0 },
-  preConsult: { time: 2, money: 0 },
-  twentyGo: { time: 2, money: 0 },
-  seedpost: { time: 2, money: 0 },
+  react: { time: 3, money: 0 },
+  comment: { time: 3, money: 0 },
+  drink: { time: 5, money: 6 },
+  spotlight: { time: 3, money: 0 },
+  preConsult: { time: 3, money: 0 },
+  twentyGo: { time: 3, money: 0 },
+  seedpost: { time: 3, money: 0 },
   oneonone: { time: 3, money: 0 },
-  catchcopy: { time: 3, money: 0 },
-  aiConcept: { time: 3, money: 3 },
+  catchcopy: { time: 4, money: 0 },
+  aiConcept: { time: 4, money: 3 },
   lpDraft: { time: 5, money: 8 },
-  interest: { time: 2, money: 0 },
-  openConsult: { time: 4, money: 4 },
+  interest: { time: 3, money: 0 },
+  openConsult: { time: 5, money: 4 },
   roles: { time: 3, money: 0 },
-  ifRole: { time: 2, money: 0 },
+  ifRole: { time: 3, money: 0 },
   rewardMenu: { time: 3, money: 0 },
   crewTalk: { time: 3, money: 0 },
-  aiRoles: { time: 3, money: 3 },
-  lpImprove: { time: 4, money: 5 },
-  xday: { time: 2, money: 0 },
-  report: { time: 2, money: 0 },
-  thanksBoost: { time: 2, money: 0 },
-  announce: { time: 2, money: 5 },
-  referral: { time: 2, money: 0 },
-  live: { time: 4, money: 3 },
-  aiImprove: { time: 3, money: 3 },
-  lastCall: { time: 3, money: 6 },
+  wom: { time: 5, money: 0 },
+  aiRoles: { time: 4, money: 3 },
+  lpImprove: { time: 5, money: 5 },
+  xday: { time: 3, money: 0 },
+  report: { time: 3, money: 0 },
+  thanksBoost: { time: 3, money: 0 },
+  announce: { time: 3, money: 5 },
+  referral: { time: 3, money: 0 },
+  live: { time: 5, money: 3 },
+  aiImprove: { time: 4, money: 3 },
+  lastCall: { time: 4, money: 6 },
 };
 
 const FEE_PER_HEAD = 1;
@@ -557,7 +581,7 @@ const phaseNames = {
   launch: "集客",
 };
 
-const SAVE_KEY = "booster-sim-save-v2";
+const SAVE_KEY = "booster-sim-save-v3";
 const INTRO_KEY = "booster-sim-intro-seen-v1";
 
 function loadState() {
@@ -654,8 +678,8 @@ function getPhase(week = state.week) {
 // 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
 const cardPool = {
   seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
-  bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "drink", "aiRoles", "lpImprove", "comment", "announce"],
-  launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
+  bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "comment", "announce"],
+  launch: ["xday", "report", "thanksBoost", "referral", "wom", "live", "aiImprove", "lastCall", "announce"],
 };
 
 const HAND_SIZE = 6;
@@ -679,7 +703,7 @@ function drawHand() {
   const light = shuffle(
     pool.filter((id) => {
       const c = cards.find((card) => card.id === id);
-      return (c.time || 0) <= 2 && (c.money || 0) === 0 && !must.includes(id);
+      return (c.time || 0) <= 3 && (c.money || 0) === 0 && !must.includes(id);
     }),
   );
   for (let i = 0; i < light.length && must.length < 3 && must.length < size; i++) {
@@ -901,6 +925,17 @@ function getLearning(s, chosen) {
       "最後の募集だけで船は急に進みません。告知前のリアクション、相談、関わりしろが当日の人数に変わります。",
     );
   }
+  if (ids.includes("wom")) {
+    candidates.push(
+      "『紹介して』だけでは人は動けません。何を・誰に・どう伝えるかを設計して初めて、口コミは広がります。",
+      "口コミは運ではなく設計です。伝えてほしい一言と体験談を用意すると、仲間が紹介しやすくなります。",
+    );
+  }
+  if (ids.includes("referral") && s.stats.wom < 25) {
+    candidates.push(
+      "紹介をお願いする前に、口コミを設計しましょう。伝える言葉が無いと、仲間も何を広めればいいか分かりません。",
+    );
+  }
   if (ids.some((id) => id.startsWith("ai"))) {
     candidates.push(
       "AIは魔法ではなく、壁打ちと改善の速度を上げる道具。人との接点と組み合わせるほど効きます。",
@@ -922,7 +957,7 @@ function getRank() {
   if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 60 && p.supporters >= 78 && p.crew >= 5 && p.core >= 4 && t >= 55) {
+  if (p.attendees >= 60 && p.supporters >= 65 && p.crew >= 4 && p.core >= 4 && t >= 55) {
     return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
   }
   if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {
@@ -967,6 +1002,7 @@ function render() {
 
 function getPillarValue(key) {
   if (key === "trust") return state.stats.trust;
+  if (key === "wom") return state.stats.wom;
   if (key === "relation") return Math.round((state.stats.relation * 0.7) + (state.stats.reach * 0.3));
   if (key === "concept") return Math.round((state.stats.concept * 0.72) + (state.stats.roles * 0.28));
   return Math.round((state.stats.ai * 0.72) + (state.stats.reach * 0.28));

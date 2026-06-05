@@ -313,7 +313,7 @@ const cards = [
       s.people.crew += crewGain;
       s.people.core += coreGain;
       addLog(s, crewGain || coreGain
-        ? `運営候補と話した。${crewGain}人が運営に、${coreGain}人が本気メンバーになった。`
+        ? `運営候補と話した。${crewGain}人が運営に、${coreGain}人がコアメンバーになった。`
         : "運営候補と話した。興味はあるが、まだ自分ごとになるにはもう一歩。");
     },
   },
@@ -675,7 +675,7 @@ function applyPassiveEvents(s, chosen) {
   ) {
     s.people.core += 1;
     addStat(s, "reach", 4);
-    addLog(s, "運営メンバーの一人が、自分ごとの本気メンバーに変わった。役割と想いが重なった瞬間だった。");
+    addLog(s, "運営メンバーの一人が、自分ごとのコアメンバーに変わった。役割と想いが重なった瞬間だった。");
   }
 
   if (s.people.attendees >= 18 && s.people.crew + s.people.core === 0 && chance(0.45)) {
@@ -764,7 +764,7 @@ function getLearning(s, chosen) {
   }
   candidates.push(
     "30人集めることより、30人をみんなで集められる状態を作ることが大事です。",
-    "参加者だけでなく、運営と本気メンバーが増えるほど、企画はあなた一人の手を離れて育ち始めます。",
+    "参加者だけでなく、運営とコアメンバーが増えるほど、企画はあなた一人の手を離れて育ち始めます。",
   );
 
   const fresh = candidates.filter((message) => message !== s.lastLearning);
@@ -894,7 +894,7 @@ function getDiagnosis() {
   if (p.attendees >= 30 && p.core >= 3) {
     return {
       type: "応援共創型",
-      advice: "参加者も本気メンバーも生まれています。次は運営メンバーに小さなリーダー役を渡すと、あなた一人の企画から、みんなの企画に変わっていきます。",
+      advice: "参加者もコアメンバーも生まれています。次は運営メンバーに小さなリーダー役を渡すと、あなた一人の企画から、みんなの企画に変わっていきます。",
     };
   }
 
@@ -963,7 +963,7 @@ async function copyResult() {
     `参加者: ${state.people.attendees}/30`,
     `応援者: ${state.people.supporters}/100`,
     `運営: ${state.people.crew}/3`,
-    `本気メンバー: ${state.people.core}/3`,
+    `コアメンバー: ${state.people.core}/3`,
     `コメント: ${message}`,
     `次のアドバイス: ${diagnosis.advice}`,
     "",

@@ -25,6 +25,7 @@ const initialState = {
     timeMax: 10,
     money: 30,
   },
+  hand: [],
   log: [
     "BOOSTER酒場に企画の地図を広げた。まだ仲間は少ない。ここから12週間で、みんなで30人集められる状態を作ろう。",
   ],
@@ -650,14 +651,49 @@ function getPhase(week = state.week) {
   return "launch";
 }
 
+// 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
+const cardPool = {
+  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
+  bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "drink", "aiRoles", "lpImprove", "comment", "announce"],
+  launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
+};
+
+const HAND_SIZE = 6;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// 毎週の手札を引く。告知を必ず入れ、詰み防止に軽いカードを2枚保証する。
+function drawHand() {
+  const pool = cardPool[getPhase()].slice();
+  const size = Math.min(HAND_SIZE, pool.length);
+  const must = [];
+
+  if (pool.includes("announce")) must.push("announce");
+
+  const light = shuffle(
+    pool.filter((id) => {
+      const c = cards.find((card) => card.id === id);
+      return (c.time || 0) <= 2 && (c.money || 0) === 0 && !must.includes(id);
+    }),
+  );
+  for (let i = 0; i < light.length && must.length < 3 && must.length < size; i++) {
+    must.push(light[i]);
+  }
+
+  const rest = shuffle(pool.filter((id) => !must.includes(id)));
+  const hand = must.concat(rest).slice(0, size);
+  state.hand = shuffle(hand);
+}
+
 function getAvailableCards() {
-  const phase = getPhase();
-  const cardOrder = {
-    seed: ["react", "comment", "drink", "preConsult", "oneonone", "catchcopy", "aiConcept", "announce"],
-    bond: ["interest", "openConsult", "roles", "rewardMenu", "crewTalk", "drink", "aiRoles", "announce"],
-    launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
-  };
-  return cardOrder[phase].map((id) => cards.find((card) => card.id === id));
+  if (!state.hand || !state.hand.length) drawHand();
+  return state.hand.map((id) => cards.find((card) => card.id === id));
 }
 
 function selectedCost() {
@@ -713,6 +749,7 @@ function runWeek() {
   }
 
   state.week += 1;
+  drawHand();
   render();
 }
 
@@ -1118,6 +1155,7 @@ async function copyResult() {
 function resetGame() {
   clearSave();
   state = structuredClone(initialState);
+  drawHand();
   els.copyStatus.textContent = "";
   render();
 }

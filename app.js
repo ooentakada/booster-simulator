@@ -1418,82 +1418,223 @@ const rankColor = {
   "Dランク": "#d95043",
 };
 
+// 診断タイプ別の"称号キャラ"
+const typeBadge = {
+  "応援共創型": { title: "みんなで航海するキャプテン", color: "#4f8d5d" },
+  "一人で集めきり型": { title: "孤高のソロ船長", color: "#cc6f2b" },
+  "信頼残高ぎりぎり型": { title: "飛ばしすぎた開拓者", color: "#d95043" },
+  "企画先行・関係性不足型": { title: "アイデア先行の発明家", color: "#7b5fc6" },
+  "関係性先行・企画磨き待ち型": { title: "人望あつめの世話役", color: "#2f9aa0" },
+  "AI加速・人肌不足型": { title: "AI全開のテクノロジスト", color: "#2f9aa0" },
+  "運営候補育成型": { title: "仲間を育てる兄貴肌・姉御肌", color: "#4f8d5d" },
+  "土台づくり型": { title: "これから伸びる新米船長", color: "#8f563b" },
+};
+
+// ドット絵の仲間を1体描く。crown=コアメンバー(王冠)。
+function drawSprite(ctx, x, y, s, shirt, crown) {
+  const hair = "#3f2d2a";
+  const skin = "#f0b783";
+  ctx.fillStyle = hair;
+  ctx.fillRect(x, y, 18 * s, 7 * s);
+  ctx.fillStyle = skin;
+  ctx.fillRect(x + 2 * s, y + 5 * s, 14 * s, 8 * s);
+  ctx.fillStyle = shirt;
+  ctx.fillRect(x, y + 13 * s, 18 * s, 11 * s);
+  ctx.fillStyle = "#2e3f4f";
+  ctx.fillRect(x + 3 * s, y + 24 * s, 4 * s, 5 * s);
+  ctx.fillRect(x + 11 * s, y + 24 * s, 4 * s, 5 * s);
+  if (crown) {
+    ctx.fillStyle = "#f3b546";
+    ctx.beginPath();
+    ctx.moveTo(x + 1 * s, y + 1 * s);
+    ctx.lineTo(x + 4 * s, y - 5 * s);
+    ctx.lineTo(x + 9 * s, y + 1 * s);
+    ctx.lineTo(x + 14 * s, y - 5 * s);
+    ctx.lineTo(x + 17 * s, y + 1 * s);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+// QRコードを描画（ライブラリが読めていれば）。成否を返す。
+function drawQR(ctx, url, x, y, size) {
+  try {
+    if (typeof qrcode !== "function") return false;
+    const qr = qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+    const n = qr.getModuleCount();
+    const cell = size / n;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x - 10, y - 10, size + 20, size + 20);
+    ctx.fillStyle = "#1d1d1f";
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect(x + c * cell, y + r * cell, cell + 0.6, cell + 0.6);
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function generateShareCard() {
   const [rank] = getRank();
   const d = getDiagnosis();
-  const W = 1200;
-  const H = 630;
+  const badge = typeBadge[d.type] || { title: d.type, color: "#4f8d5d" };
+  const rColor = rankColor[rank] || "#4f8d5d";
+  const W = 1080;
+  const H = 1080;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   const font = '"Hiragino Sans", "Yu Gothic", system-ui, sans-serif';
+  ctx.textBaseline = "middle";
 
-  // 背景＋枠
-  ctx.fillStyle = "#fff2cf";
+  // 背景: 空→海
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, "#8fd0e0");
+  sky.addColorStop(0.45, "#77bfd2");
+  sky.addColorStop(0.46, "#e7c27a");
+  sky.addColorStop(0.52, "#2f9aa0");
+  sky.addColorStop(1, "#166a76");
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
+
+  // 外枠
   ctx.strokeStyle = "#4f2f28";
-  ctx.lineWidth = 14;
-  ctx.strokeRect(7, 7, W - 14, H - 14);
+  ctx.lineWidth = 16;
+  ctx.strokeRect(8, 8, W - 16, H - 16);
 
   // 上部バー
   ctx.fillStyle = "#8f563b";
-  ctx.fillRect(14, 14, W - 28, 84);
+  ctx.fillRect(16, 16, W - 32, 76);
   ctx.fillStyle = "#fff2cf";
   ctx.font = `800 30px ${font}`;
-  ctx.textBaseline = "middle";
   ctx.textAlign = "left";
-  ctx.fillText("BOOSTER ｜ 応援共創シミュレーター", 44, 58);
+  ctx.fillText("BOOSTER ｜ 応援共創シミュレーター", 44, 56);
 
-  // ランク
+  // 称号バナー
   ctx.textAlign = "center";
-  ctx.fillStyle = "#6f2f2a";
-  ctx.font = `800 24px ${font}`;
-  ctx.fillText("FINAL RANK", W / 2, 150);
-  ctx.fillStyle = rankColor[rank] || "#4f8d5d";
-  ctx.font = `900 96px ${font}`;
-  ctx.fillText(rank, W / 2, 230);
-  ctx.fillStyle = "#2b2118";
-  ctx.font = `800 40px ${font}`;
-  ctx.fillText(d.type, W / 2, 305);
+  ctx.fillStyle = "#fff2cf";
+  ctx.font = `800 30px ${font}`;
+  ctx.fillText(`あなたは「${d.type}」`, W / 2, 150);
+  ctx.fillStyle = badge.color;
+  ctx.font = `900 56px ${font}`;
+  ctx.fillText(badge.title, W / 2, 205);
 
-  // 指標4つ
+  // ランク勲章（左上の円メダル）
+  const mx = 165;
+  const my = 320;
+  const mr = 92;
+  ctx.beginPath();
+  ctx.arc(mx, my, mr, 0, Math.PI * 2);
+  ctx.fillStyle = rColor;
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "#fff2cf";
+  ctx.stroke();
+  ctx.fillStyle = "#fff";
+  ctx.font = `900 78px ${font}`;
+  ctx.fillText(rank.replace("ランク", ""), mx, my + 4);
+  ctx.font = `800 24px ${font}`;
+  ctx.fillText("RANK", mx, my + 58);
+
+  // 海に浮かぶ船＋甲板の仲間
+  const deckY = 560;
+  // 船体
+  ctx.fillStyle = "#8f563b";
+  ctx.strokeStyle = "#4f2f28";
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(250, deckY);
+  ctx.lineTo(830, deckY);
+  ctx.lineTo(760, deckY + 110);
+  ctx.lineTo(320, deckY + 110);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // マスト＋帆（帆は高めにして甲板の仲間を隠さない）
+  ctx.fillStyle = "#4f2f28";
+  ctx.fillRect(536, deckY - 230, 10, 230);
+  ctx.fillStyle = "#fff4dc";
+  ctx.strokeStyle = "#4f2f28";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(548, deckY - 225);
+  ctx.lineTo(672, deckY - 180);
+  ctx.lineTo(548, deckY - 110);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 甲板に仲間スプライトを並べる（コア=王冠/運営/応援者の代表）
+  const shirts = ["#d95043", "#2f9aa0", "#4f8d5d", "#f3b546", "#7b5fc6", "#cc6f2b"];
+  const crew = state.people.crew;
+  const core = state.people.core;
+  const supDisplay = Math.min(10, Math.ceil(state.people.supporters / 12));
+  const people = [];
+  for (let i = 0; i < Math.min(core, 4); i++) people.push({ crown: true, big: true });
+  for (let i = 0; i < Math.min(crew, 5); i++) people.push({ crown: false, big: true });
+  for (let i = 0; i < supDisplay; i++) people.push({ crown: false, big: false });
+  // 後列（応援者・小）
+  let sx = 300;
+  people.filter((p) => !p.big).forEach((p, i) => {
+    drawSprite(ctx, sx + i * 50, deckY - 78, 1.9, shirts[(i + 2) % shirts.length], false);
+  });
+  // 前列（コア・運営・大）
+  const bigs = people.filter((p) => p.big);
+  const startX = W / 2 - (bigs.length * 64) / 2;
+  bigs.forEach((p, i) => {
+    drawSprite(ctx, startX + i * 64, deckY - 18, 2.7, p.crown ? "#f3b546" : shirts[i % shirts.length], p.crown);
+  });
+
+  // 数字パネル（4指標）
   const stats = [
     ["参加者", `${state.people.attendees}`],
     ["応援者", `${state.people.supporters}`],
     ["運営", `${state.people.crew}`],
     ["コア", `${state.people.core}`],
   ];
-  const boxW = 250;
-  const gap = 24;
+  const boxW = 232;
+  const gap = 20;
   const totalW = boxW * 4 + gap * 3;
-  let x = (W - totalW) / 2;
-  const y = 360;
+  let bx = (W - totalW) / 2;
+  const by = 752;
   stats.forEach(([label, val]) => {
     ctx.fillStyle = "#fff8df";
-    ctx.fillRect(x, y, boxW, 110);
-    ctx.strokeStyle = "rgba(79,47,40,0.4)";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(x, y, boxW, 110);
+    ctx.fillRect(bx, by, boxW, 116);
+    ctx.strokeStyle = "rgba(79,47,40,0.45)";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(bx, by, boxW, 116);
     ctx.fillStyle = "#6f4f2f";
-    ctx.font = `800 26px ${font}`;
-    ctx.fillText(label, x + boxW / 2, y + 32);
+    ctx.font = `800 28px ${font}`;
+    ctx.fillText(label, bx + boxW / 2, by + 34);
     ctx.fillStyle = "#2b2118";
-    ctx.font = `900 52px ${font}`;
-    ctx.fillText(val, x + boxW / 2, y + 76);
-    x += boxW + gap;
+    ctx.font = `900 54px ${font}`;
+    ctx.fillText(val, bx + boxW / 2, by + 80);
+    bx += boxW + gap;
   });
 
-  // 一言
+  // 一言フック
   ctx.fillStyle = "#2b2118";
-  ctx.font = `800 30px ${font}`;
+  ctx.font = `800 32px ${font}`;
   const hook = typeHook[d.type] || "集客の考え方が5分で変わる";
-  ctx.fillText(hook, W / 2, 525);
+  ctx.fillText(hook, W / 2 - 70, 928);
 
-  // URL
-  ctx.fillStyle = "#7a6a52";
+  // 煽り＋URL（左下）
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#2b2118";
+  ctx.font = `900 34px ${font}`;
+  ctx.fillText("あなたは何人、仲間と集められる？", 60, 990);
+  ctx.fillStyle = "#3a3027";
   ctx.font = `700 26px ${font}`;
-  ctx.fillText("ooentakada.github.io/booster-simulator", W / 2, 585);
+  ctx.fillText("ooentakada.github.io/booster-simulator", 60, 1030);
+
+  // QRコード（右下）
+  drawQR(ctx, SHARE_URL, W - 190, H - 200, 150);
 
   return canvas;
 }

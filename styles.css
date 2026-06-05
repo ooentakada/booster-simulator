@@ -561,6 +561,105 @@ h2 {
 
 .action-panel .cards {
   min-height: 0;
+  overflow-y: auto;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ghost-button {
+  padding: 7px 11px;
+  border: 3px solid var(--wood-dark);
+  border-radius: 8px;
+  background: #fff8df;
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(79, 47, 40, 0.28);
+}
+
+.ghost-button:hover {
+  background: #ffe19a;
+}
+
+.goal-hint {
+  margin: 0 8px 4px;
+  font-size: 0.6rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #6f3f2f;
+}
+
+.intro-dialog {
+  width: min(560px, calc(100% - 28px));
+  border: 4px solid var(--wood-dark);
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+}
+
+.intro-dialog::backdrop {
+  background: rgba(29, 23, 19, 0.65);
+}
+
+.intro-box {
+  padding: 20px;
+  background: var(--paper);
+}
+
+.intro-box h2 {
+  margin: 4px 0 10px;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.intro-lead {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.intro-steps {
+  margin: 14px 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 9px;
+}
+
+.intro-steps li {
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.intro-goals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.intro-goals span {
+  padding: 8px 10px;
+  border: 3px solid rgba(79, 47, 40, 0.3);
+  border-radius: 6px;
+  background: #fff8df;
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.intro-goals strong {
+  display: inline-block;
+  margin-right: 4px;
+  color: var(--coral);
+}
+
+.intro-box .primary-button {
+  width: 100%;
+  margin: 0;
 }
 
 .result-dialog {

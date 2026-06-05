@@ -486,7 +486,34 @@ const phaseNames = {
   launch: "集客",
 };
 
-let state = structuredClone(initialState);
+const SAVE_KEY = "booster-sim-save-v1";
+const INTRO_KEY = "booster-sim-intro-seen-v1";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.week !== "number" || !parsed.stats || !parsed.people) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+function clearSave() {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {}
+}
+
+let state = loadState() || structuredClone(initialState);
 
 const els = {
   week: document.querySelector("#week"),
@@ -517,6 +544,9 @@ const els = {
   copyResult: document.querySelector("#copyResult"),
   copyStatus: document.querySelector("#copyStatus"),
   closeResult: document.querySelector("#closeResult"),
+  introDialog: document.querySelector("#introDialog"),
+  introStart: document.querySelector("#introStart"),
+  helpButton: document.querySelector("#helpButton"),
 };
 
 function clamp(value, min = 0, max = 100) {
@@ -550,9 +580,9 @@ function getPhase(week = state.week) {
 function getAvailableCards() {
   const phase = getPhase();
   const cardOrder = {
-    seed: ["announce", "lpDraft", "catchcopy", "react", "comment", "preConsult", "oneonone", "aiConcept"],
-    bond: ["announce", "lpImprove", "interest", "openConsult", "roles", "crewTalk", "aiRoles", "comment"],
-    launch: ["announce", "referral", "live", "aiImprove", "report", "xday", "thanksBoost", "lastCall"],
+    seed: ["react", "comment", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
+    bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "aiRoles", "lpImprove", "comment", "announce"],
+    launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
   };
   return cardOrder[phase].map((id) => cards.find((card) => card.id === id));
 }
@@ -782,6 +812,7 @@ function render() {
   renderCards();
   renderLog();
   renderParty();
+  saveState();
 }
 
 function getPillarValue(key) {
@@ -964,9 +995,31 @@ async function copyResult() {
 }
 
 function resetGame() {
+  clearSave();
   state = structuredClone(initialState);
   els.copyStatus.textContent = "";
   render();
+}
+
+function openIntro() {
+  if (els.introDialog && typeof els.introDialog.showModal === "function") {
+    els.introDialog.showModal();
+  }
+}
+
+function closeIntro() {
+  try {
+    localStorage.setItem(INTRO_KEY, "1");
+  } catch {}
+  if (els.introDialog) els.introDialog.close();
+}
+
+function maybeShowIntroOnLoad() {
+  let seen = false;
+  try {
+    seen = !!localStorage.getItem(INTRO_KEY);
+  } catch {}
+  if (!seen) openIntro();
 }
 
 els.runButton.addEventListener("click", runWeek);
@@ -976,5 +1029,9 @@ els.closeResult.addEventListener("click", () => {
   els.dialog.close();
   resetGame();
 });
+if (els.introStart) els.introStart.addEventListener("click", closeIntro);
+if (els.helpButton) els.helpButton.addEventListener("click", openIntro);
 
 render();
+maybeShowIntroOnLoad();
+if (state.ended) showResult();

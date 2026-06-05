@@ -23,10 +23,13 @@
           <p class="eyebrow">BOOSTER prototype</p>
           <h1>30人を仲間と集客する 応援共創シミュレーター</h1>
         </div>
-        <div class="week-badge">
-          <span>Week</span>
-          <strong id="week">1</strong>
-          <small>/ 12</small>
+        <div class="topbar-right">
+          <button id="helpButton" class="ghost-button" type="button">？遊び方</button>
+          <div class="week-badge">
+            <span>Week</span>
+            <strong id="week">1</strong>
+            <small>/ 12</small>
+          </div>
         </div>
       </header>
 
@@ -66,11 +69,12 @@
             <button id="resetButton" class="icon-button" title="最初から">↺</button>
           </div>
           <div class="goal-list">
-            <div><span>参加者</span><strong id="attendees">0</strong><small>/30</small></div>
-            <div><span>応援者</span><strong id="supporters">0</strong><small>/100</small></div>
-            <div><span>運営</span><strong id="crew">0</strong><small>/3</small></div>
-            <div><span>本気</span><strong id="core">0</strong><small>/3</small></div>
+            <div title="イベントに申し込んでくれた人。ゴールは30人。"><span>参加者</span><strong id="attendees">0</strong><small>/30</small></div>
+            <div title="リアクション・コメント・シェアなどで支えてくれる人。母数が増えるほど集客が伸びやすい。"><span>応援者</span><strong id="supporters">0</strong><small>/100</small></div>
+            <div title="受付・紹介・進行など、役割を持って一緒に動いてくれる人。"><span>運営</span><strong id="crew">0</strong><small>/3</small></div>
+            <div title="企画を自分ごととして本気で伴走してくれる人。仲間化の最終形。"><span>本気</span><strong id="core">0</strong><small>/3</small></div>
           </div>
+          <p class="goal-hint">数字にカーソルを乗せると説明が出ます。いきなり告知せず、応援・相談で土台を作るのがコツ。</p>
           <div class="status-list" id="statusList"></div>
         </aside>
 
@@ -107,6 +111,28 @@
           <button id="closeResult" class="primary-button">もう一度、酒場へ</button>
         </div>
         <p id="copyStatus" class="copy-status" aria-live="polite"></p>
+      </div>
+    </dialog>
+
+    <dialog id="introDialog" class="intro-dialog">
+      <div class="intro-box">
+        <p class="eyebrow">はじめての方へ</p>
+        <h2>30人を“みんなで”集める12週間</h2>
+        <p class="intro-lead">
+          一人で告知して集めるゲームではありません。応援し合う土台を作り、仲間を増やし、最後にみんなで30人を集める——その流れを体験します。
+        </p>
+        <ol class="intro-steps">
+          <li><strong>毎週、行動カードを3枚選んで「実行」</strong>。全12週で結果が出ます。</li>
+          <li><strong>3つのフェーズ</strong>で進みます：<br />種まき（関係性づくり）→ 仲間化（関わり方を渡す）→ 集客（みんなで募集）。</li>
+          <li><strong>いきなり告知すると失敗します。</strong>先に応援・相談・感謝で「信頼残高」を貯めるのがコツ。</li>
+        </ol>
+        <div class="intro-goals">
+          <span><strong>参加者</strong> 申し込んだ人</span>
+          <span><strong>応援者</strong> 支えてくれる人</span>
+          <span><strong>運営</strong> 役割を持つ仲間</span>
+          <span><strong>本気</strong> 自分ごとの仲間</span>
+        </div>
+        <button id="introStart" class="primary-button" type="button">酒場へ入る</button>
       </div>
     </dialog>
 

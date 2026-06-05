@@ -989,9 +989,31 @@ h2 {
 
 @media (max-width: 1080px) {
   .game-shell {
-    height: 100vh;
-    min-height: 0;
-    overflow: hidden;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .panel {
+    overflow: visible;
+  }
+
+  .action-panel,
+  .log-panel {
+    display: block;
+  }
+
+  .action-panel .cards {
+    overflow: visible;
+  }
+
+  .metrics-panel {
+    overflow: visible;
+  }
+
+  .log {
+    height: auto;
+    grid-template-rows: none;
   }
 
   .dashboard {
@@ -1030,6 +1052,10 @@ h2 {
 
 @media (max-width: 680px) {
   .game-shell {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
     padding: 8px;
   }
 
@@ -1098,19 +1124,39 @@ h2 {
   }
 
   .dashboard {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(170px, auto) minmax(0, 1fr);
+    display: block;
+    height: auto;
+    margin-top: 8px;
   }
 
   .top-stage {
     grid-template-columns: 1fr;
-    grid-template-rows: 108px 96px;
-    height: 212px;
+    grid-template-rows: 108px auto;
+    height: auto;
+    margin-bottom: 8px;
   }
 
   .metrics-panel {
     display: block;
-    overflow-y: auto;
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+
+  .log-panel {
+    display: block;
+  }
+
+  .log {
+    height: auto;
+    grid-template-rows: none;
+  }
+
+  .action-panel {
+    display: block;
+  }
+
+  .action-panel .cards {
+    overflow: visible;
   }
 
   .panel-head {

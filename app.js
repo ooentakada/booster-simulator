@@ -90,6 +90,26 @@ const cards = [
     },
   },
   {
+    id: "drink",
+    title: "飲みに行く",
+    icon: "杯",
+    phase: "seed",
+    text: "酒場で一緒に飲んで、本音で語り合う。お金はかかるが関係性がぐっと深まる。",
+    apply: (s) => {
+      addStat(s, "relation", 16);
+      addStat(s, "trust", 10);
+      addStat(s, "commitment", 5);
+      s.people.supporters += roll(2, 5);
+      s.multipliers.nextPost += 2;
+      if (s.people.interested > 4 && chance((s.stats.relation + s.stats.commitment) / 220)) {
+        s.people.crew += 1;
+        addLog(s, "飲みながら本音で語り合った。『その挑戦、おれも一緒にやりたい』と、運営に近づく仲間が生まれた。");
+      } else {
+        addLog(s, "酒場で一緒に飲んだ。建前が外れて、相手との関係がぐっと深まった。");
+      }
+    },
+  },
+  {
     id: "preConsult",
     title: "事前相談する",
     icon: "談",
@@ -489,6 +509,7 @@ const cards = [
 const cardCost = {
   react: { time: 2, money: 0 },
   comment: { time: 2, money: 0 },
+  drink: { time: 3, money: 6 },
   spotlight: { time: 2, money: 0 },
   preConsult: { time: 2, money: 0 },
   twentyGo: { time: 2, money: 0 },
@@ -516,6 +537,11 @@ const cardCost = {
 };
 
 const FEE_PER_HEAD = 1;
+
+// 難易度スケーリング: 毎週の「参加者・応援者の増加分」を圧縮する。
+// 数字が青天井に伸びるのを抑え、A/Bを主役に、Sを滅多に出ない達成にする。
+const ATT_SCALE = 0.4;
+const SUP_SCALE = 0.45;
 
 cards.forEach((card) => {
   const cost = cardCost[card.id] || { time: 3, money: 0 };
@@ -626,8 +652,8 @@ function getPhase(week = state.week) {
 function getAvailableCards() {
   const phase = getPhase();
   const cardOrder = {
-    seed: ["react", "comment", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
-    bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "aiRoles", "lpImprove", "comment", "announce"],
+    seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
+    bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "drink", "aiRoles", "lpImprove", "comment", "announce"],
     launch: ["xday", "report", "thanksBoost", "referral", "live", "aiImprove", "lastCall", "announce"],
   };
   return cardOrder[phase].map((id) => cards.find((card) => card.id === id));
@@ -665,9 +691,12 @@ function runWeek() {
   const chosen = state.selected.map((id) => cards.find((card) => card.id === id));
   const moneyCost = chosen.reduce((sum, card) => sum + (card.money || 0), 0);
   const attBefore = state.people.attendees;
+  const supBefore = state.people.supporters;
   state.currentWeekLog = [];
   chosen.forEach((card) => card.apply(state));
   applyPassiveEvents(state, chosen);
+  scaleGain("attendees", attBefore, ATT_SCALE);
+  scaleGain("supporters", supBefore, SUP_SCALE);
   normalizePeople(state);
   const income = Math.max(0, state.people.attendees - attBefore) * FEE_PER_HEAD;
   state.resources.money = clamp(state.resources.money - moneyCost + income, 0, 999);
@@ -684,6 +713,11 @@ function runWeek() {
 
   state.week += 1;
   render();
+}
+
+function scaleGain(key, beforeVal, factor) {
+  const delta = state.people[key] - beforeVal;
+  if (delta > 0) state.people[key] = beforeVal + Math.round(delta * factor);
 }
 
 function normalizePeople(s) {
@@ -804,6 +838,12 @@ function getLearning(s, chosen) {
       "いきなり募集しても、酒場は振り向いてくれません。先に誰かの挑戦に反応すると、会話の温度が上がります。",
     );
   }
+  if (ids.includes("drink")) {
+    candidates.push(
+      "オンラインの応援だけでは届かない距離があります。一緒に飲んで本音で話すと、関係性は一気に深まります。",
+      "飲み代はコストではなく投資です。建前が外れた関係は、いざというとき本気で動いてくれる仲間に変わります。",
+    );
+  }
   if (ids.includes("roles") || ids.includes("aiRoles")) {
     candidates.push(
       "いいねを仲間に変えるには、関わりしろが必要です。何を手伝えばいいかが見えると、人は動きやすくなります。",
@@ -839,20 +879,21 @@ function getLearning(s, chosen) {
 
 function getRank() {
   const p = state.people;
-  if (state.stats.trust < 18) {
+  const t = state.stats.trust;
+  if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 30 && p.supporters >= 100 && p.crew >= 3 && p.core >= 3 && state.stats.trust >= 35) {
-    return ["Sランク", "30人集客を、仲間と応援者の力で達成した。これは一人の集客ではなく、応援共創のムーブメントです。"];
+  if (p.attendees >= 60 && p.supporters >= 72 && p.crew >= 5 && p.core >= 4 && t >= 55) {
+    return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
   }
-  if (p.attendees >= 30 && (p.crew > 0 || p.core > 0)) {
-    return ["Aランク", "イベントは形になり、仲間も生まれた。次は関わりしろをさらに増やすと、もっと広がります。"];
+  if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {
+    return ["Aランク", "イベントは形になり、仲間も生まれた。次は応援者を増やし、コアメンバーを厚くすると、Sの景色が見えてきます。"];
   }
-  if (p.attendees >= 15 && p.crew + p.core < 2) {
-    return ["Cランク", "集客は進んだが、ほぼ一人で頑張った状態です。30人集めることより、30人をみんなで集められる状態を作ることが大事です。"];
+  if (p.attendees >= 15 && (p.crew >= 1 || p.supporters >= 35)) {
+    return ["Bランク", "まだ満席ではないが、応援される土台は育っている。次回は募集前の関係性づくりと仲間化をさらに厚くしましょう。"];
   }
-  if (p.attendees >= 15 && (p.supporters >= 40 || p.crew > 0)) {
-    return ["Bランク", "まだ満席ではないが、応援される土台は育っている。次回は募集前の関係性づくりをさらに厚くしましょう。"];
+  if (p.attendees >= 8) {
+    return ["Cランク", "集客は少し進んだが、ほぼ一人で頑張った状態です。30人集めることより、30人をみんなで集められる状態を作ることが大事です。"];
   }
   return ["Dランク", "募集しても反応が薄かった。まずはリアクション、応援コメント、壁打ちから始めて、関係性の土台を作りましょう。"];
 }

@@ -27,6 +27,7 @@ const initialState = {
     money: 30,
   },
   hand: [],
+  weekResult: null,
   log: [
     "BOOSTER酒場に企画の地図を広げた。まだ仲間は少ない。ここから12週間で、みんなで30人集められる状態を作ろう。",
   ],
@@ -580,6 +581,39 @@ const cardCost = {
   lastCall: { time: 4, money: 6 },
 };
 
+// カードが主に効く指標（カード上に表示してバーを見に行かなくて済むように）。
+const cardEffect = {
+  react: ["関係+", "信頼+"],
+  comment: ["関係+", "信頼+"],
+  drink: ["関係++", "企画+"],
+  spotlight: ["関係+", "応援+"],
+  preConsult: ["関係+", "企画+"],
+  twentyGo: ["企画+", "興味+"],
+  seedpost: ["興味+"],
+  oneonone: ["企画+", "仲間の芽"],
+  catchcopy: ["企画++"],
+  aiConcept: ["AI+", "企画+"],
+  lpDraft: ["企画++", "信頼-"],
+  interest: ["興味+", "応援+"],
+  openConsult: ["応援++", "興味+"],
+  roles: ["関わりしろ+"],
+  ifRole: ["関わりしろ+", "本気+"],
+  rewardMenu: ["関わりしろ+"],
+  crewTalk: ["本気+", "運営化"],
+  wom: ["口コミ+"],
+  monitor: ["企画++", "信頼+", "声"],
+  aiRoles: ["AI+", "関わりしろ+"],
+  lpImprove: ["企画+"],
+  xday: ["本気+", "信頼-"],
+  report: ["本気+", "信頼+"],
+  thanksBoost: ["関係+", "信頼+"],
+  announce: ["集客", "信頼--"],
+  referral: ["集客", "口コミ次第"],
+  live: ["興味+", "拡散+"],
+  aiImprove: ["AI+"],
+  lastCall: ["集客", "信頼--"],
+};
+
 const FEE_PER_HEAD = 1;
 
 // 難易度スケーリング: 毎週の「参加者・応援者の増加分」を圧縮する。
@@ -645,6 +679,10 @@ const els = {
   phaseText: document.querySelector("#phaseText"),
   learning: document.querySelector("#learning"),
   log: document.querySelector("#log"),
+  weekChanges: document.querySelector("#weekChanges"),
+  portGauge: document.querySelector("#portGauge"),
+  portFill: document.querySelector("#portFill"),
+  portRemain: document.querySelector("#portRemain"),
   party: document.querySelector("#party"),
   ship: document.querySelector("#ship"),
   rankPreview: document.querySelector("#rankPreview"),
@@ -660,6 +698,9 @@ const els = {
   copyResult: document.querySelector("#copyResult"),
   copyStatus: document.querySelector("#copyStatus"),
   closeResult: document.querySelector("#closeResult"),
+  resultNextHint: document.querySelector("#resultNextHint"),
+  nextStep: document.querySelector("#nextStep"),
+  ctaButton: document.querySelector("#ctaButton"),
   introDialog: document.querySelector("#introDialog"),
   introStart: document.querySelector("#introStart"),
   helpButton: document.querySelector("#helpButton"),
@@ -769,6 +810,7 @@ function runWeek() {
 
   const chosen = state.selected.map((id) => cards.find((card) => card.id === id));
   const moneyCost = chosen.reduce((sum, card) => sum + (card.money || 0), 0);
+  const before = snapshot();
   const attBefore = state.people.attendees;
   const supBefore = state.people.supporters;
   state.currentWeekLog = [];
@@ -779,6 +821,7 @@ function runWeek() {
   normalizePeople(state);
   const income = Math.max(0, state.people.attendees - attBefore) * FEE_PER_HEAD;
   state.resources.money = clamp(state.resources.money - moneyCost + income, 0, 999);
+  state.weekResult = buildWeekResult(before, snapshot(), chosen);
   state.learning = getLearning(state, chosen);
   state.lastLearning = state.learning;
   state.selected = [];
@@ -798,6 +841,70 @@ function runWeek() {
 function scaleGain(key, beforeVal, factor) {
   const delta = state.people[key] - beforeVal;
   if (delta > 0) state.people[key] = beforeVal + Math.round(delta * factor);
+}
+
+function snapshot() {
+  return {
+    attendees: state.people.attendees,
+    supporters: state.people.supporters,
+    crew: state.people.crew,
+    core: state.people.core,
+    relation: getPillarValue("relation"),
+    concept: getPillarValue("concept"),
+    ai: getPillarValue("ai"),
+    wom: state.stats.wom,
+    trust: state.stats.trust,
+  };
+}
+
+// 実行直後の「今週の変化」と一言講評を作る。
+function buildWeekResult(before, after, chosen) {
+  const labels = {
+    attendees: "参加者",
+    supporters: "応援者",
+    crew: "運営",
+    core: "コア",
+    relation: "関係性",
+    concept: "企画の魅力",
+    ai: "AI",
+    wom: "口コミ力",
+    trust: "信頼",
+  };
+  const changes = [];
+  for (const key of Object.keys(labels)) {
+    const d = after[key] - before[key];
+    if (d !== 0) changes.push({ label: labels[key], delta: d });
+  }
+  changes.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  const ids = chosen.map((c) => c.id);
+  const trustDrop = before.trust - after.trust;
+  const attGain = after.attendees - before.attendees;
+  let verdict = "";
+  let tone = "neutral";
+  if (ids.includes("announce") && getPhase(state.week) === "seed" && before.relation < 35) {
+    verdict = "関係性が薄いまま告知 → 反応が鈍い。先に応援・相談で土台を作ろう。";
+    tone = "bad";
+  } else if (ids.includes("referral") && before.wom < 25) {
+    verdict = "口コミ未設計のまま紹介依頼 → ほとんど広がらず。先に口コミを設計しよう。";
+    tone = "bad";
+  } else if (trustDrop >= 12) {
+    verdict = "信頼を大きく使った週。応援・感謝・進捗共有で残高を戻そう。";
+    tone = "warn";
+  } else if (attGain >= 8) {
+    verdict = "ここまでの関係性と企画が、集客に変わり始めた。いい流れ。";
+    tone = "good";
+  } else if (ids.includes("monitor")) {
+    verdict = "体験者の声が、企画の魅力と信頼を押し上げた。";
+    tone = "good";
+  } else if (ids.includes("drink")) {
+    verdict = "本音で語り合い、関係性がぐっと深まった（1回飲めばマブダチ）。";
+    tone = "good";
+  } else if (ids.includes("wom")) {
+    verdict = "紹介が広がる準備が整った。次は紹介依頼が効く。";
+    tone = "good";
+  }
+  return { changes, verdict, tone };
 }
 
 function normalizePeople(s) {
@@ -1017,11 +1124,39 @@ function render() {
   const [rank] = getRank();
   els.rankPreview.textContent = state.ended ? rank : "航海中";
 
+  if (els.portFill) els.portFill.style.width = `${clamp((state.people.attendees / 30) * 100, 0, 100)}%`;
+  if (els.portRemain) {
+    const remain = Math.max(0, 30 - state.people.attendees);
+    els.portRemain.textContent = remain === 0 ? "出港ライン到達！" : `出港まで あと ${remain} 人`;
+  }
+
   renderStats();
   renderCards();
   renderLog();
+  renderWeekChanges();
   renderParty();
   saveState();
+}
+
+function renderWeekChanges() {
+  if (!els.weekChanges) return;
+  const r = state.weekResult;
+  if (!r || (!r.changes.length && !r.verdict)) {
+    els.weekChanges.innerHTML = "";
+    els.weekChanges.classList.add("empty");
+    return;
+  }
+  els.weekChanges.classList.remove("empty");
+  const chips = r.changes
+    .slice(0, 6)
+    .map((c) => {
+      const cls = c.delta > 0 ? "up" : "down";
+      const sign = c.delta > 0 ? "+" : "";
+      return `<span class="change-chip ${cls}">${c.label} ${sign}${c.delta}</span>`;
+    })
+    .join("");
+  const verdict = r.verdict ? `<p class="week-verdict ${r.tone}">${r.verdict}</p>` : "";
+  els.weekChanges.innerHTML = `<div class="change-chips">${chips}</div>${verdict}`;
 }
 
 function getPillarValue(key) {
@@ -1066,10 +1201,14 @@ function renderCards() {
       if (overMoney) reason = "資金が足りません";
       else if (overTime) reason = "今週の時間が足りません";
       const costLabel = `⏳${card.time || 0}${card.money ? ` 💰${card.money}` : ""}`;
+      const tags = (cardEffect[card.id] || [])
+        .map((t) => `<span class="tag ${t.includes("-") ? "tag-down" : "tag-up"}">${t}</span>`)
+        .join("");
       return `
         <button class="card-button ${selected ? "selected" : ""}" ${disabled ? "disabled" : ""} data-card="${card.id}" title="${reason}">
           <div class="card-title"><span class="card-icon">${card.icon}</span><span class="card-name">${card.title}</span><span class="card-cost">${costLabel}</span></div>
           <p>${card.text}</p>
+          <div class="card-tags">${tags}</div>
         </button>
       `;
     })
@@ -1080,11 +1219,17 @@ function renderCards() {
   });
 }
 
+function logTone(message) {
+  if (/(薄|鈍|広がらな|反応はなかった|失敗|静かに|伸びは小さ|まだ|足りな|少なかった|尽き)/.test(message)) return "bad";
+  if (/(つながった|変わり始め|広がって|深まった|生まれた|本気|証明|育|伸び|動き出す|押し出され|温まった)/.test(message)) return "good";
+  return "";
+}
+
 function renderLog() {
   const visibleLog = state.currentWeekLog.length ? state.currentWeekLog : state.log.slice(-1);
   els.log.innerHTML = visibleLog
     .slice(0, 3)
-    .map((message) => `<li>${message}</li>`)
+    .map((message) => `<li class="${logTone(message)}">${message}</li>`)
     .join("");
 }
 
@@ -1157,6 +1302,10 @@ function getDiagnosis() {
   };
 }
 
+// BOOSTERの案内ページURL。設定すると結果画面にCTAボタンが出る（空なら非表示）。
+const CTA_URL = "";
+const NEXT_STEP_KEY = "booster-sim-nextstep-v1";
+
 function showResult() {
   const [rank, message] = getRank();
   const diagnosis = getDiagnosis();
@@ -1168,12 +1317,29 @@ function showResult() {
   els.finalSupporters.textContent = state.people.supporters;
   els.finalCrew.textContent = state.people.crew;
   els.finalCore.textContent = state.people.core;
+  if (els.resultNextHint) {
+    els.resultNextHint.textContent = `あなたは「${diagnosis.type}」。これをゲームで終わらせないために —`;
+  }
+  if (els.nextStep) {
+    try {
+      els.nextStep.value = localStorage.getItem(NEXT_STEP_KEY) || "";
+    } catch {}
+  }
+  if (els.ctaButton) {
+    if (CTA_URL) {
+      els.ctaButton.href = CTA_URL;
+      els.ctaButton.hidden = false;
+    } else {
+      els.ctaButton.hidden = true;
+    }
+  }
   els.dialog.showModal();
 }
 
 async function copyResult() {
   const [rank, message] = getRank();
   const diagnosis = getDiagnosis();
+  const myNext = els.nextStep ? els.nextStep.value.trim() : "";
   const text = [
     "応援共創シミュレーターをやってみました",
     `結果: ${rank}`,
@@ -1184,13 +1350,14 @@ async function copyResult() {
     `コアメンバー: ${state.people.core}/3`,
     `コメント: ${message}`,
     `次のアドバイス: ${diagnosis.advice}`,
+    myNext ? `\n私が今週やる一歩: ${myNext}` : "",
     "",
     "フィードバック観点:",
     "1. 面白かったところ",
     "2. わかりにくかったところ",
     "3. BOOSTERらしい/らしくないと感じたところ",
     "4. もう一度やりたいと思うか",
-  ].join("\n");
+  ].filter((line) => line !== "").join("\n");
 
   try {
     if (navigator.clipboard) {
@@ -1250,6 +1417,13 @@ els.closeResult.addEventListener("click", () => {
 });
 if (els.introStart) els.introStart.addEventListener("click", closeIntro);
 if (els.helpButton) els.helpButton.addEventListener("click", openIntro);
+if (els.nextStep) {
+  els.nextStep.addEventListener("input", () => {
+    try {
+      localStorage.setItem(NEXT_STEP_KEY, els.nextStep.value);
+    } catch {}
+  });
+}
 
 render();
 maybeShowIntroOnLoad();

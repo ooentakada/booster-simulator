@@ -556,12 +556,162 @@ h2 {
 
 .action-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
 }
 
 .action-panel .cards {
   min-height: 0;
   overflow-y: auto;
+}
+
+/* 出港ゲージ（現在地） */
+.port-gauge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 2px;
+}
+
+.port-bar {
+  flex: 1;
+  height: 12px;
+  border: 2px solid var(--wood-dark);
+  border-radius: 6px;
+  background: #dfc58b;
+  overflow: hidden;
+}
+
+.port-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--leaf), var(--sea));
+  transition: width 300ms ease;
+}
+
+.port-remain {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--wood-dark);
+}
+
+/* 今週の変化（即時フィードバック） */
+.week-changes {
+  padding: 2px 10px 6px;
+}
+
+.week-changes.empty {
+  display: none;
+}
+
+.change-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.change-chip {
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  border: 2px solid transparent;
+}
+
+.change-chip.up {
+  background: #d8efd0;
+  border-color: #4f8d5d;
+  color: #2c5a36;
+}
+
+.change-chip.down {
+  background: #f6d8d3;
+  border-color: #c0503f;
+  color: #8a2f23;
+}
+
+.week-verdict {
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.4;
+  border-left: 4px solid #9b8b6a;
+  background: #fff8df;
+}
+
+.week-verdict.good { border-left-color: #4f8d5d; background: #e7f3df; }
+.week-verdict.bad { border-left-color: #c0503f; background: #f8e3df; }
+.week-verdict.warn { border-left-color: #e0a32b; background: #fbf0d3; }
+
+/* カードの効果タグ */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.tag {
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-size: 0.54rem;
+  font-weight: 800;
+  background: #efe3c4;
+  color: #6f4f2f;
+}
+
+.tag.tag-up { background: #dff0d8; color: #3a6b43; }
+.tag.tag-down { background: #f4ddd7; color: #9a3a2b; }
+
+/* 酒場ログの色分け */
+.log li.good { color: #2f6b3c; }
+.log li.bad { color: #9a3a2b; }
+
+/* 結果画面: 明日の一歩 + CTA */
+.next-step {
+  margin: 14px 0 10px;
+  padding: 10px;
+  border: 3px solid rgba(79, 47, 40, 0.3);
+  border-radius: 8px;
+  background: #eef6e6;
+}
+
+.next-step-hint {
+  margin-bottom: 6px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+#nextStep {
+  width: 100%;
+  padding: 7px;
+  border: 2px solid var(--wood-dark);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.8rem;
+  resize: vertical;
+  background: #fff;
+}
+
+.cta-button[hidden] {
+  display: none !important;
+}
+
+.cta-button {
+  display: block;
+  margin: 0 0 12px;
+  padding: 11px;
+  border: 4px solid var(--wood-dark);
+  border-radius: 8px;
+  background: var(--sea);
+  color: #fff;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 5px 0 var(--deep-sea);
 }
 
 .topbar-right {

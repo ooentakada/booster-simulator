@@ -304,6 +304,23 @@ const cards = [
     },
   },
   {
+    id: "monitor",
+    title: "モニターで試す",
+    icon: "声",
+    phase: "bond",
+    text: "小さくお試し体験してもらい、喜びの声を集める。声が企画の魅力の証拠になり、信頼も高まる。",
+    apply: (s) => {
+      addStat(s, "concept", 13);
+      addStat(s, "trust", 8);
+      addStat(s, "wom", 6);
+      addStat(s, "reach", 2);
+      s.people.supporters += roll(2, 5);
+      addLog(s, s.stats.concept > 45
+        ? "モニターで試してもらった。集まった喜びの声が積み重なり、『これは間違いない』という空気が企画を後押しした。"
+        : "モニターで試してもらった。『これ良い！』という声が、自分で魅力を語るより強く企画の価値を証明してくれた。");
+    },
+  },
+  {
     id: "ifRole",
     title: "もしもロール",
     icon: "if",
@@ -550,6 +567,7 @@ const cardCost = {
   rewardMenu: { time: 3, money: 0 },
   crewTalk: { time: 3, money: 0 },
   wom: { time: 5, money: 0 },
+  monitor: { time: 5, money: 2 },
   aiRoles: { time: 4, money: 3 },
   lpImprove: { time: 5, money: 5 },
   xday: { time: 3, money: 0 },
@@ -678,7 +696,7 @@ function getPhase(week = state.week) {
 // 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
 const cardPool = {
   seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
-  bond: ["interest", "openConsult", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "comment", "announce"],
+  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "comment", "announce"],
   launch: ["xday", "report", "thanksBoost", "referral", "wom", "live", "aiImprove", "lastCall", "announce"],
 };
 
@@ -931,6 +949,12 @@ function getLearning(s, chosen) {
       "口コミは運ではなく設計です。伝えてほしい一言と体験談を用意すると、仲間が紹介しやすくなります。",
     );
   }
+  if (ids.includes("monitor")) {
+    candidates.push(
+      "企画の魅力は自分で言うより、試した人の声が証明します。小さくモニターしてもらい、喜びの声を集めましょう。",
+      "1回目から完璧を目指さなくていい。お試しで体験してもらった声があるほど、企画は信頼され、本番の集客が変わります。",
+    );
+  }
   if (ids.includes("referral") && s.stats.wom < 25) {
     candidates.push(
       "紹介をお願いする前に、口コミを設計しましょう。伝える言葉が無いと、仲間も何を広めればいいか分かりません。",
@@ -957,7 +981,7 @@ function getRank() {
   if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 60 && p.supporters >= 65 && p.crew >= 4 && p.core >= 4 && t >= 55) {
+  if (p.attendees >= 60 && p.supporters >= 66 && p.crew >= 4 && p.core >= 4 && t >= 55) {
     return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
   }
   if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {

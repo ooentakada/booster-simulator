@@ -595,6 +595,49 @@ h2 {
   color: #6f3f2f;
 }
 
+.resource-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 8px 6px;
+}
+
+.resource {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 3px solid var(--wood-dark);
+  border-radius: 6px;
+  background: #fbeec4;
+}
+
+.resource span {
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.resource strong {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.card-name {
+  min-width: 0;
+}
+
+.card-cost {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(79, 47, 40, 0.12);
+  font-size: 0.58rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .intro-dialog {
   width: min(560px, calc(100% - 28px));
   border: 4px solid var(--wood-dark);
@@ -853,7 +896,7 @@ h2 {
 
   .dashboard {
     grid-template-columns: 1fr;
-    grid-template-rows: 112px minmax(0, 1fr);
+    grid-template-rows: minmax(170px, auto) minmax(0, 1fr);
   }
 
   .top-stage {
@@ -863,13 +906,8 @@ h2 {
   }
 
   .metrics-panel {
-    display: grid;
-    grid-template-columns: 190px minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-  }
-
-  .metrics-panel .panel-head {
-    grid-column: 1 / -1;
+    display: block;
+    overflow-y: auto;
   }
 
   .panel-head {

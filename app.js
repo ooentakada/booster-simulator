@@ -21,6 +21,10 @@ const initialState = {
     nextPost: 0,
     nextLaunch: 0,
   },
+  resources: {
+    timeMax: 10,
+    money: 30,
+  },
   log: [
     "BOOSTER酒場に企画の地図を広げた。まだ仲間は少ない。ここから12週間で、みんなで30人集められる状態を作ろう。",
   ],
@@ -480,13 +484,52 @@ const cards = [
   },
 ];
 
+// 各カードのコスト。time=毎週の持ち時間消費 / money=資金消費。
+// 応援・相談・感謝などの「人間的な行動」は money:0（無料）。AI・LP・広告・会場はお金がかかる。
+const cardCost = {
+  react: { time: 2, money: 0 },
+  comment: { time: 2, money: 0 },
+  spotlight: { time: 2, money: 0 },
+  preConsult: { time: 2, money: 0 },
+  twentyGo: { time: 2, money: 0 },
+  seedpost: { time: 2, money: 0 },
+  oneonone: { time: 3, money: 0 },
+  catchcopy: { time: 3, money: 0 },
+  aiConcept: { time: 3, money: 3 },
+  lpDraft: { time: 5, money: 8 },
+  interest: { time: 2, money: 0 },
+  openConsult: { time: 4, money: 4 },
+  roles: { time: 3, money: 0 },
+  ifRole: { time: 2, money: 0 },
+  rewardMenu: { time: 3, money: 0 },
+  crewTalk: { time: 3, money: 0 },
+  aiRoles: { time: 3, money: 3 },
+  lpImprove: { time: 4, money: 5 },
+  xday: { time: 2, money: 0 },
+  report: { time: 2, money: 0 },
+  thanksBoost: { time: 2, money: 0 },
+  announce: { time: 2, money: 5 },
+  referral: { time: 2, money: 0 },
+  live: { time: 4, money: 3 },
+  aiImprove: { time: 3, money: 3 },
+  lastCall: { time: 3, money: 6 },
+};
+
+const FEE_PER_HEAD = 1;
+
+cards.forEach((card) => {
+  const cost = cardCost[card.id] || { time: 3, money: 0 };
+  card.time = cost.time;
+  card.money = cost.money;
+});
+
 const phaseNames = {
   seed: "種まき",
   bond: "仲間化",
   launch: "集客",
 };
 
-const SAVE_KEY = "booster-sim-save-v1";
+const SAVE_KEY = "booster-sim-save-v2";
 const INTRO_KEY = "booster-sim-intro-seen-v1";
 
 function loadState() {
@@ -524,6 +567,9 @@ const els = {
   statusList: document.querySelector("#statusList"),
   cards: document.querySelector("#cards"),
   selectedCount: document.querySelector("#selectedCount"),
+  timeNow: document.querySelector("#timeNow"),
+  timeMax: document.querySelector("#timeMax"),
+  money: document.querySelector("#money"),
   runButton: document.querySelector("#runButton"),
   resetButton: document.querySelector("#resetButton"),
   phaseText: document.querySelector("#phaseText"),
@@ -587,11 +633,27 @@ function getAvailableCards() {
   return cardOrder[phase].map((id) => cards.find((card) => card.id === id));
 }
 
+function selectedCost() {
+  let time = 0;
+  let money = 0;
+  state.selected.forEach((id) => {
+    const card = cards.find((c) => c.id === id);
+    if (!card) return;
+    time += card.time || 0;
+    money += card.money || 0;
+  });
+  return { time, money };
+}
+
 function selectCard(id) {
   if (state.ended) return;
   if (state.selected.includes(id)) {
     state.selected = state.selected.filter((cardId) => cardId !== id);
   } else if (state.selected.length < 3) {
+    const card = cards.find((c) => c.id === id);
+    const spent = selectedCost();
+    if (spent.time + (card.time || 0) > state.resources.timeMax) return;
+    if (spent.money + (card.money || 0) > state.resources.money) return;
     state.selected.push(id);
   }
   render();
@@ -601,10 +663,14 @@ function runWeek() {
   if (state.selected.length !== 3 || state.ended) return;
 
   const chosen = state.selected.map((id) => cards.find((card) => card.id === id));
+  const moneyCost = chosen.reduce((sum, card) => sum + (card.money || 0), 0);
+  const attBefore = state.people.attendees;
   state.currentWeekLog = [];
   chosen.forEach((card) => card.apply(state));
   applyPassiveEvents(state, chosen);
   normalizePeople(state);
+  const income = Math.max(0, state.people.attendees - attBefore) * FEE_PER_HEAD;
+  state.resources.money = clamp(state.resources.money - moneyCost + income, 0, 999);
   state.learning = getLearning(state, chosen);
   state.lastLearning = state.learning;
   state.selected = [];
@@ -798,6 +864,10 @@ function render() {
   els.crew.textContent = state.people.crew;
   els.core.textContent = state.people.core;
   els.selectedCount.textContent = state.selected.length;
+  const spent = selectedCost();
+  if (els.timeNow) els.timeNow.textContent = state.resources.timeMax - spent.time;
+  if (els.timeMax) els.timeMax.textContent = state.resources.timeMax;
+  if (els.money) els.money.textContent = state.resources.money;
   els.runButton.disabled = state.selected.length !== 3 || state.ended;
   els.learning.textContent = state.learning;
   els.phaseText.textContent = `${phaseNames[getPhase()]}: ${getPhaseDescription()}`;
@@ -844,13 +914,21 @@ function renderStats() {
 
 function renderCards() {
   const available = getAvailableCards();
+  const spent = selectedCost();
   els.cards.innerHTML = available
     .map((card) => {
       const selected = state.selected.includes(card.id);
-      const disabled = !selected && state.selected.length >= 3;
+      const full = !selected && state.selected.length >= 3;
+      const overTime = !selected && spent.time + (card.time || 0) > state.resources.timeMax;
+      const overMoney = !selected && spent.money + (card.money || 0) > state.resources.money;
+      const disabled = full || overTime || overMoney;
+      let reason = card.text;
+      if (overMoney) reason = "資金が足りません";
+      else if (overTime) reason = "今週の時間が足りません";
+      const costLabel = `⏳${card.time || 0}${card.money ? ` 💰${card.money}` : ""}`;
       return `
-        <button class="card-button ${selected ? "selected" : ""}" ${disabled ? "disabled" : ""} data-card="${card.id}">
-          <div class="card-title"><span class="card-icon">${card.icon}</span><span>${card.title}</span></div>
+        <button class="card-button ${selected ? "selected" : ""}" ${disabled ? "disabled" : ""} data-card="${card.id}" title="${reason}">
+          <div class="card-title"><span class="card-icon">${card.icon}</span><span class="card-name">${card.title}</span><span class="card-cost">${costLabel}</span></div>
           <p>${card.text}</p>
         </button>
       `;

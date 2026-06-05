@@ -124,6 +124,14 @@
           <textarea id="nextStep" rows="2" placeholder="あなたの実際のイベントで、今週やる種まきを1つ書こう（例: 〇〇さんの投稿に応援コメントする／気になる人に事前相談する）"></textarea>
         </div>
         <a id="ctaButton" class="cta-button" href="#" target="_blank" rel="noopener" hidden>BOOSTERで実際にやってみる →</a>
+        <div class="share-actions">
+          <button id="shareX" class="share-btn x" type="button">𝕏 でシェア</button>
+          <button id="shareImage" class="share-btn img" type="button">📷 結果カード画像</button>
+        </div>
+        <div class="share-preview-wrap" id="sharePreviewWrap" hidden>
+          <img id="sharePreview" class="share-preview" alt="結果カード画像" />
+          <a id="shareDownload" class="share-download" download="booster-result.png">画像を保存する</a>
+        </div>
         <div class="result-actions">
           <button id="copyResult" class="secondary-button">結果をコピー</button>
           <button id="closeResult" class="primary-button">もう一度、酒場へ</button>

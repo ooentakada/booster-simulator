@@ -701,6 +701,11 @@ const els = {
   resultNextHint: document.querySelector("#resultNextHint"),
   nextStep: document.querySelector("#nextStep"),
   ctaButton: document.querySelector("#ctaButton"),
+  shareX: document.querySelector("#shareX"),
+  shareImage: document.querySelector("#shareImage"),
+  sharePreviewWrap: document.querySelector("#sharePreviewWrap"),
+  sharePreview: document.querySelector("#sharePreview"),
+  shareDownload: document.querySelector("#shareDownload"),
   introDialog: document.querySelector("#introDialog"),
   introStart: document.querySelector("#introStart"),
   helpButton: document.querySelector("#helpButton"),
@@ -1379,11 +1384,144 @@ async function copyResult() {
   }
 }
 
+const SHARE_URL = "https://ooentakada.github.io/booster-simulator/";
+
+const typeHook = {
+  "応援共創型": "告知から始めちゃう人こそ遊んでほしい",
+  "一人で集めきり型": "集客はできた。でも“みんなで”集める難しさを痛感",
+  "信頼残高ぎりぎり型": "お願いばかりで信頼が枯れた…耳が痛い",
+  "企画先行・関係性不足型": "企画が良くても人は動かない、を体感",
+  "関係性先行・企画磨き待ち型": "応援される土台はある。あとは企画の言葉だ",
+  "AI加速・人肌不足型": "AIで量産しても温度が足りない、を実感",
+  "運営候補育成型": "一緒に動く仲間が生まれ始めた手応え",
+  "土台づくり型": "まずは関係性の土台から。ここがスタート",
+};
+
+function buildShareText() {
+  const [rank] = getRank();
+  const d = getDiagnosis();
+  const hook = typeHook[d.type] || "集客の考え方が5分で変わる";
+  return `応援共創シミュレーターで遊んだら【${rank}・${d.type}】だった🚢\n12週で参加者${state.people.attendees}人を“みんなで”集めた。${hook}。`;
+}
+
+function shareToX() {
+  const text = `${buildShareText()}\n#応援共創シミュレーター\n`;
+  const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SHARE_URL)}`;
+  window.open(intent, "_blank", "noopener");
+}
+
+const rankColor = {
+  "Sランク": "#f3b546",
+  "Aランク": "#4f8d5d",
+  "Bランク": "#2f9aa0",
+  "Cランク": "#cc6f2b",
+  "Dランク": "#d95043",
+};
+
+function generateShareCard() {
+  const [rank] = getRank();
+  const d = getDiagnosis();
+  const W = 1200;
+  const H = 630;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const font = '"Hiragino Sans", "Yu Gothic", system-ui, sans-serif';
+
+  // 背景＋枠
+  ctx.fillStyle = "#fff2cf";
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#4f2f28";
+  ctx.lineWidth = 14;
+  ctx.strokeRect(7, 7, W - 14, H - 14);
+
+  // 上部バー
+  ctx.fillStyle = "#8f563b";
+  ctx.fillRect(14, 14, W - 28, 84);
+  ctx.fillStyle = "#fff2cf";
+  ctx.font = `800 30px ${font}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.fillText("BOOSTER ｜ 応援共創シミュレーター", 44, 58);
+
+  // ランク
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#6f2f2a";
+  ctx.font = `800 24px ${font}`;
+  ctx.fillText("FINAL RANK", W / 2, 150);
+  ctx.fillStyle = rankColor[rank] || "#4f8d5d";
+  ctx.font = `900 96px ${font}`;
+  ctx.fillText(rank, W / 2, 230);
+  ctx.fillStyle = "#2b2118";
+  ctx.font = `800 40px ${font}`;
+  ctx.fillText(d.type, W / 2, 305);
+
+  // 指標4つ
+  const stats = [
+    ["参加者", `${state.people.attendees}`],
+    ["応援者", `${state.people.supporters}`],
+    ["運営", `${state.people.crew}`],
+    ["コア", `${state.people.core}`],
+  ];
+  const boxW = 250;
+  const gap = 24;
+  const totalW = boxW * 4 + gap * 3;
+  let x = (W - totalW) / 2;
+  const y = 360;
+  stats.forEach(([label, val]) => {
+    ctx.fillStyle = "#fff8df";
+    ctx.fillRect(x, y, boxW, 110);
+    ctx.strokeStyle = "rgba(79,47,40,0.4)";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, boxW, 110);
+    ctx.fillStyle = "#6f4f2f";
+    ctx.font = `800 26px ${font}`;
+    ctx.fillText(label, x + boxW / 2, y + 32);
+    ctx.fillStyle = "#2b2118";
+    ctx.font = `900 52px ${font}`;
+    ctx.fillText(val, x + boxW / 2, y + 76);
+    x += boxW + gap;
+  });
+
+  // 一言
+  ctx.fillStyle = "#2b2118";
+  ctx.font = `800 30px ${font}`;
+  const hook = typeHook[d.type] || "集客の考え方が5分で変わる";
+  ctx.fillText(hook, W / 2, 525);
+
+  // URL
+  ctx.fillStyle = "#7a6a52";
+  ctx.font = `700 26px ${font}`;
+  ctx.fillText("ooentakada.github.io/booster-simulator", W / 2, 585);
+
+  return canvas;
+}
+
+function shareImage() {
+  const canvas = generateShareCard();
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], "booster-result.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text: buildShareText() });
+        return;
+      } catch {}
+    }
+    const url = URL.createObjectURL(blob);
+    if (els.sharePreview) els.sharePreview.src = url;
+    if (els.shareDownload) els.shareDownload.href = url;
+    if (els.sharePreviewWrap) els.sharePreviewWrap.hidden = false;
+  }, "image/png");
+}
+
 function resetGame() {
   clearSave();
   state = structuredClone(initialState);
   drawHand();
   els.copyStatus.textContent = "";
+  if (els.sharePreviewWrap) els.sharePreviewWrap.hidden = true;
   render();
 }
 
@@ -1417,6 +1555,8 @@ els.closeResult.addEventListener("click", () => {
 });
 if (els.introStart) els.introStart.addEventListener("click", closeIntro);
 if (els.helpButton) els.helpButton.addEventListener("click", openIntro);
+if (els.shareX) els.shareX.addEventListener("click", shareToX);
+if (els.shareImage) els.shareImage.addEventListener("click", shareImage);
 if (els.nextStep) {
   els.nextStep.addEventListener("input", () => {
     try {

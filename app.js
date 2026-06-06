@@ -9,6 +9,7 @@ const initialState = {
     ai: 0,
     reach: 0,
     wom: 0,
+    prep: 0,
     trust: 50,
   },
   people: {
@@ -46,6 +47,7 @@ const pillarMeta = [
   ["concept", "企画の魅力", "#d95043"],
   ["ai", "AI仕掛け力", "#2f9aa0"],
   ["wom", "口コミ力", "#e08a2b"],
+  ["prep", "本番準備", "#c77d3a"],
   ["trust", "信頼残高", "#7b5fc6"],
 ];
 
@@ -545,6 +547,22 @@ const cards = [
         : "ラスト募集をしたが、伸びは小さかった。最後だけ頑張っても、船は急には進まない。");
     },
   },
+  {
+    id: "prepare",
+    title: "本番の準備をする",
+    icon: "幕",
+    phase: "launch",
+    text: "当日の進行・台本・おもてなしを整える。集客だけでは、来た人の満足度は上がらない。",
+    apply: (s) => {
+      addStat(s, "prep", 16);
+      addStat(s, "commitment", 3);
+      addStat(s, "trust", 3);
+      if (s.people.crew > 0) addStat(s, "prep", 4);
+      addLog(s, s.stats.prep < 26
+        ? "本番の準備を始めた。当日の流れと役割を整えると、来た人の満足度が変わってくる。"
+        : "本番の準備を磨き込んだ。おもてなしと進行が整い、参加者が『来てよかった』と思える場になりそうだ。");
+    },
+  },
 ];
 
 // 各カードのコスト。time=毎週の持ち時間消費 / money=資金消費。
@@ -580,6 +598,7 @@ const cardCost = {
   live: { time: 5, money: 3 },
   aiImprove: { time: 4, money: 3 },
   lastCall: { time: 4, money: 6 },
+  prepare: { time: 4, money: 2 },
 };
 
 // カードが主に効く指標（カード上に表示してバーを見に行かなくて済むように）。
@@ -613,6 +632,7 @@ const cardEffect = {
   live: ["興味+", "拡散+"],
   aiImprove: ["AI+"],
   lastCall: ["集客", "信頼--"],
+  prepare: ["本番準備++", "満足度"],
 };
 
 const FEE_PER_HEAD = 1;
@@ -634,7 +654,7 @@ const phaseNames = {
   launch: "集客",
 };
 
-const SAVE_KEY = "booster-sim-save-v3";
+const SAVE_KEY = "booster-sim-save-v4";
 const INTRO_KEY = "booster-sim-intro-seen-v1";
 
 function loadState() {
@@ -745,7 +765,7 @@ function getPhase(week = state.week) {
 const cardPool = {
   seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
   bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "comment", "announce"],
-  launch: ["xday", "report", "thanksBoost", "referral", "wom", "live", "aiImprove", "lastCall", "announce"],
+  launch: ["xday", "report", "thanksBoost", "referral", "wom", "prepare", "live", "aiImprove", "lastCall", "announce"],
 };
 
 const HAND_SIZE = 6;
@@ -926,7 +946,7 @@ function normalizePeople(s) {
   s.people.interested = clamp(s.people.interested, 0, 80);
   s.people.attendees = clamp(s.people.attendees, 0, 120);
   s.people.supporters = clamp(s.people.supporters, 0, 120);
-  s.people.crew = clamp(s.people.crew, 0, 8);
+  s.people.crew = clamp(s.people.crew, 0, 12);
   s.people.core = clamp(s.people.core, 0, 5);
 }
 
@@ -1077,6 +1097,12 @@ function getLearning(s, chosen) {
       "1回目から完璧を目指さなくていい。お試しで体験してもらった声があるほど、企画は信頼され、本番の集客が変わります。",
     );
   }
+  if (ids.includes("prepare")) {
+    candidates.push(
+      "人を集めることと、当日満足してもらうことは別の準備です。進行・台本・おもてなしを整えるほど、満足度が上がります。",
+      "集客がゴールではありません。来てくれた人が『来てよかった』と思える準備こそ、次回の応援につながります。",
+    );
+  }
   if (ids.includes("referral") && s.stats.wom < 25) {
     candidates.push(
       "紹介をお願いする前に、口コミを設計しましょう。伝える言葉が無いと、仲間も何を広めればいいか分かりません。",
@@ -1097,17 +1123,26 @@ function getLearning(s, chosen) {
   return fresh[roll(0, fresh.length - 1)];
 }
 
+// 当日満足度: 本番準備が主、企画の魅力が補助。これが低いと人を集めてもランクが頭打ちになる。
+function getSatisfaction() {
+  return clamp(state.stats.prep + Math.round(getPillarValue("concept") * 0.25), 0, 100);
+}
+
 function getRank() {
   const p = state.people;
   const t = state.stats.trust;
+  const sat = getSatisfaction();
   if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 45 && p.supporters >= 66 && p.crew >= 4 && p.core >= 4 && t >= 55) {
-    return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
+  if (p.attendees >= 38 && p.supporters >= 60 && p.crew >= 4 && p.core >= 4 && t >= 50 && sat >= 60) {
+    return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成。さらに本番の準備も行き届き、当日の満足度も最高。これは応援共創のムーブメントです。滅多に届かない景色です。"];
   }
-  if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {
-    return ["Aランク", "イベントは形になり、仲間も生まれた。次は応援者を増やし、コアメンバーを厚くすると、Sの景色が見えてきます。"];
+  if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1) && sat >= 40) {
+    return ["Aランク", "イベントは形になり、仲間も生まれ、当日の満足度も高かった。次は応援者とコアメンバーを厚くすると、Sの景色が見えてきます。"];
+  }
+  if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1) && sat < 40) {
+    return ["Bランク", "30人は集まったのに、本番の準備が足りず当日の満足度が伸び悩んだ。集客と同じくらい『来た人にどう過ごしてもらうか』の準備が大事です。"];
   }
   if (p.attendees >= 15 && (p.crew >= 1 || p.supporters >= 35)) {
     return ["Bランク", "まだ満席ではないが、応援される土台は育っている。次回は募集前の関係性づくりと仲間化をさらに厚くしましょう。"];
@@ -1206,6 +1241,7 @@ function renderWeekChanges() {
 function getPillarValue(key) {
   if (key === "trust") return state.stats.trust;
   if (key === "wom") return state.stats.wom;
+  if (key === "prep") return state.stats.prep;
   if (key === "relation") return Math.round((state.stats.relation * 0.7) + (state.stats.reach * 0.3));
   if (key === "concept") return Math.round((state.stats.concept * 0.72) + (state.stats.roles * 0.28));
   return Math.round((state.stats.ai * 0.72) + (state.stats.reach * 0.28));
@@ -1295,6 +1331,13 @@ function getDiagnosis() {
     return {
       type: "信頼残高ぎりぎり型",
       advice: "告知やお願いの回数に対して、応援、相談、感謝が足りていません。次回は募集前に人の挑戦へ反応し、進捗と感謝を共有して、酒場の温度を戻しましょう。",
+    };
+  }
+
+  if (p.attendees >= 30 && getSatisfaction() < 40) {
+    return {
+      type: "集客先行・準備不足型",
+      advice: "人は集まりましたが、本番の準備が薄く当日の満足度が伸びませんでした。次回は集客と並行して、進行・台本・おもてなしの準備（本番の準備カード）を進めましょう。",
     };
   }
 
@@ -1616,7 +1659,7 @@ function generateShareCard() {
   const supDisplay = Math.min(10, Math.ceil(state.people.supporters / 12));
   const people = [];
   for (let i = 0; i < Math.min(core, 4); i++) people.push({ crown: true, big: true });
-  for (let i = 0; i < Math.min(crew, 5); i++) people.push({ crown: false, big: true });
+  for (let i = 0; i < Math.min(crew, 7); i++) people.push({ crown: false, big: true });
   for (let i = 0; i < supDisplay; i++) people.push({ crown: false, big: false });
   // 後列（応援者・小）
   let sx = 300;

@@ -28,6 +28,7 @@ const initialState = {
   },
   hand: [],
   weekResult: null,
+  phaseAnnounce: null,
   log: [
     "BOOSTER酒場に企画の地図を広げた。まだ仲間は少ない。ここから12週間で、みんなで30人集められる状態を作ろう。",
   ],
@@ -838,10 +839,18 @@ function runWeek() {
     return;
   }
 
+  const oldPhase = getPhase(state.week);
   state.week += 1;
+  const newPhase = getPhase(state.week);
+  state.phaseAnnounce = newPhase !== oldPhase ? newPhase : null;
   drawHand();
   render();
 }
+
+const phaseIntro = {
+  bond: { label: "仲間化フェーズ", desc: "興味を持ってくれた人を、関わってくれる仲間に変えていく時期。" },
+  launch: { label: "集客フェーズ", desc: "いよいよ本番。仲間と応援者の力で参加者を集めていく時期。" },
+};
 
 function scaleGain(key, beforeVal, factor) {
   const delta = state.people[key] - beforeVal;
@@ -1155,22 +1164,31 @@ function render() {
 function renderWeekChanges() {
   if (!els.weekChanges) return;
   const r = state.weekResult;
-  if (!r || (!r.changes.length && !r.verdict)) {
+  const pa = state.phaseAnnounce;
+  const hasChanges = r && (r.changes.length || r.verdict);
+  if (!pa && !hasChanges) {
     els.weekChanges.innerHTML = "";
     els.weekChanges.classList.add("empty");
     return;
   }
   els.weekChanges.classList.remove("empty");
-  const chips = r.changes
-    .slice(0, 6)
-    .map((c) => {
-      const cls = c.delta > 0 ? "up" : "down";
-      const sign = c.delta > 0 ? "+" : "";
-      return `<span class="change-chip ${cls}">${c.label} ${sign}${c.delta}</span>`;
-    })
-    .join("");
-  const verdict = r.verdict ? `<p class="week-verdict ${r.tone}">${r.verdict}</p>` : "";
-  els.weekChanges.innerHTML = `<div class="change-chips">${chips}</div>${verdict}`;
+  let html = "";
+  if (pa && phaseIntro[pa]) {
+    html += `<div class="phase-banner ${pa}"><strong>🚩 ${phaseIntro[pa].label}に入りました</strong><span>${phaseIntro[pa].desc}</span></div>`;
+  }
+  if (hasChanges) {
+    const chips = r.changes
+      .slice(0, 6)
+      .map((c) => {
+        const cls = c.delta > 0 ? "up" : "down";
+        const sign = c.delta > 0 ? "+" : "";
+        return `<span class="change-chip ${cls}">${c.label} ${sign}${c.delta}</span>`;
+      })
+      .join("");
+    const verdict = r.verdict ? `<p class="week-verdict ${r.tone}">${r.verdict}</p>` : "";
+    html += `<div class="change-chips">${chips}</div>${verdict}`;
+  }
+  els.weekChanges.innerHTML = html;
 }
 
 function getPillarValue(key) {

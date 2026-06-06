@@ -1119,7 +1119,12 @@ function render() {
   if (els.timeNow) els.timeNow.textContent = state.resources.timeMax - spent.time;
   if (els.timeMax) els.timeMax.textContent = state.resources.timeMax;
   if (els.money) els.money.textContent = state.resources.money;
+  const need = 3 - state.selected.length;
   els.runButton.disabled = state.selected.length !== 3 || state.ended;
+  els.runButton.classList.toggle("ready", state.selected.length === 3 && !state.ended);
+  if (!state.ended) {
+    els.runButton.textContent = need > 0 ? `カードをあと${need}枚選ぶ` : "今週を実行 ▶";
+  }
   els.learning.textContent = state.learning;
   els.phaseText.textContent = `${phaseNames[getPhase()]}: ${getPhaseDescription()}`;
 
@@ -1132,7 +1137,11 @@ function render() {
   if (els.portFill) els.portFill.style.width = `${clamp((state.people.attendees / 30) * 100, 0, 100)}%`;
   if (els.portRemain) {
     const remain = Math.max(0, 30 - state.people.attendees);
-    els.portRemain.textContent = remain === 0 ? "出港ライン到達！" : `出港まで あと ${remain} 人`;
+    if (state.people.attendees === 0 && getPhase() !== "launch") {
+      els.portRemain.textContent = "いまは仲間と土台を育てる時期";
+    } else {
+      els.portRemain.textContent = remain === 0 ? "出港ライン到達！" : `出港まで あと ${remain} 人`;
+    }
   }
 
   renderStats();

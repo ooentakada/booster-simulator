@@ -559,15 +559,15 @@ const cards = [
     title: "本番の準備をする",
     icon: "幕",
     phase: "launch",
-    text: "当日の進行・台本・おもてなしを整える。集客だけでは、来た人の満足度は上がらない。",
+    text: "当日の進行・台本・おもてなしを整える。運営メンバーが多いほど準備は加速する（一人だと進まない）。",
     apply: (s) => {
-      addStat(s, "prep", 16);
+      const gain = 4 + s.people.crew * 3;
+      addStat(s, "prep", gain);
       addStat(s, "commitment", 3);
       addStat(s, "trust", 3);
-      if (s.people.crew > 0) addStat(s, "prep", 4);
-      addLog(s, s.stats.prep < 26
-        ? "本番の準備を始めた。当日の流れと役割を整えると、来た人の満足度が変わってくる。"
-        : "本番の準備を磨き込んだ。おもてなしと進行が整い、参加者が『来てよかった』と思える場になりそうだ。");
+      addLog(s, s.people.crew === 0
+        ? "一人で本番の準備を始めたが、手が足りず思うように進まない。先に一緒に動く運営メンバーがほしい。"
+        : `運営メンバー${s.people.crew}人と手分けして準備を進めた。仲間がいるほど準備は一気にはかどる。`);
     },
   },
 ];
@@ -639,7 +639,7 @@ const cardEffect = {
   live: ["興味+", "拡散+"],
   aiImprove: ["AI+"],
   lastCall: ["集客", "信頼--"],
-  prepare: ["本番準備++", "満足度"],
+  prepare: ["本番準備", "運営で加速"],
 };
 
 const FEE_PER_HEAD = 1;
@@ -770,8 +770,8 @@ function getPhase(week = state.week) {
 
 // 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
 const cardPool = {
-  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "announce"],
-  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "comment", "announce"],
+  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "prepare", "announce"],
+  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "prepare", "comment", "announce"],
   launch: ["xday", "report", "thanksBoost", "referral", "wom", "prepare", "live", "aiImprove", "lastCall", "announce"],
 };
 
@@ -1112,6 +1112,7 @@ function getLearning(s, chosen) {
   if (ids.includes("prepare")) {
     candidates.push(
       "人を集めることと、当日満足してもらうことは別の準備です。進行・台本・おもてなしを整えるほど、満足度が上がります。",
+      "準備は一人では進みません。運営メンバーがいるほど当日の段取りは一気に整います。まず仲間を作るのが近道です。",
       "集客がゴールではありません。来てくれた人が『来てよかった』と思える準備こそ、次回の応援につながります。",
     );
   }

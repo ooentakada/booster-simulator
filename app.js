@@ -785,15 +785,20 @@ function drawHand() {
   const must = [];
 
   if (pool.includes("announce")) must.push("announce");
+  // 集客フェーズでは「準備」も毎週必ず手札に入れ、集客と準備を毎週選べるようにする
+  if (getPhase() === "launch" && pool.includes("prepare")) must.push("prepare");
 
+  // 詰み防止＆選択肢確保: 軽いカード（時間≤3・無料）を2枚保証
   const light = shuffle(
     pool.filter((id) => {
       const c = cards.find((card) => card.id === id);
       return (c.time || 0) <= 3 && (c.money || 0) === 0 && !must.includes(id);
     }),
   );
-  for (let i = 0; i < light.length && must.length < 3 && must.length < size; i++) {
+  let lightAdded = 0;
+  for (let i = 0; i < light.length && lightAdded < 2 && must.length < size; i++) {
     must.push(light[i]);
+    lightAdded += 1;
   }
 
   const rest = shuffle(pool.filter((id) => !must.includes(id)));

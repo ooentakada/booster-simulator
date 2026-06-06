@@ -561,7 +561,7 @@ const cards = [
     phase: "launch",
     text: "当日の進行・台本・おもてなしを整える。仲間（運営・コアメンバー）が多いほど準備は加速し、企画も磨かれる。一人だとほとんど進まない。",
     apply: (s) => {
-      const gain = 1 + s.people.crew * 1 + s.people.core * 5;
+      const gain = 2 + s.people.crew * 2 + s.people.core * 4;
       addStat(s, "prep", gain);
       addStat(s, "concept", 3);
       addStat(s, "commitment", 3);
@@ -772,8 +772,8 @@ function getPhase(week = state.week) {
 
 // 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
 const cardPool = {
-  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "catchcopy", "aiConcept", "lpDraft", "prepare", "announce"],
-  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "aiRoles", "lpImprove", "prepare", "comment", "announce"],
+  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "interest", "xday", "catchcopy", "aiConcept", "lpDraft", "prepare", "announce"],
+  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "xday", "aiRoles", "lpImprove", "prepare", "comment", "announce"],
   launch: ["xday", "report", "thanksBoost", "referral", "wom", "prepare", "live", "aiImprove", "lastCall", "announce"],
 };
 
@@ -1153,11 +1153,11 @@ function getRank() {
   if (p.attendees >= 38 && p.supporters >= 60 && p.crew >= 4 && p.core >= 4 && t >= 50 && sat >= 60) {
     return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成。さらに本番の準備も行き届き、当日の満足度も最高。これは応援共創のムーブメントです。滅多に届かない景色です。"];
   }
-  if (p.attendees >= 30 && p.crew >= 2 && p.core >= 1 && sat >= 48) {
+  if (p.attendees >= 30 && p.crew >= 2 && p.core >= 1 && sat >= 42) {
     return ["Aランク", "集客・仲間化・本番準備のすべてが噛み合った。一人の集客ではなく、仲間と作り上げたイベント。次は応援者とコアメンバーを厚くすると、Sの景色が見えてきます。"];
   }
   if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {
-    if (sat < 48) {
+    if (sat < 42) {
       return ["Bランク", "30人は集まったのに、本番の準備が足りず当日の満足度が伸び悩んだ。集客と同じくらい『来た人にどう過ごしてもらうか』の準備が大事です。"];
     }
     return ["Bランク", "30人は集まったが、一緒に動く仲間（運営・コアメンバー）がまだ薄い。仲間化を厚くすると、あなた一人の企画から『みんなの企画』に変わり、Aが見えてきます。"];

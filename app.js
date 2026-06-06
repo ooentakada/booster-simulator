@@ -618,7 +618,7 @@ const FEE_PER_HEAD = 1;
 
 // 難易度スケーリング: 毎週の「参加者・応援者の増加分」を圧縮する。
 // 数字が青天井に伸びるのを抑え、A/Bを主役に、Sを滅多に出ない達成にする。
-const ATT_SCALE = 0.4;
+const ATT_SCALE = 0.25;
 const SUP_SCALE = 0.45;
 
 cards.forEach((card) => {
@@ -1093,7 +1093,7 @@ function getRank() {
   if (t < 18) {
     return ["Dランク", "信頼残高が尽きかけています。告知やお願いを重ねる前に、応援、相談、感謝で酒場の温度を戻しましょう。"];
   }
-  if (p.attendees >= 60 && p.supporters >= 66 && p.crew >= 4 && p.core >= 4 && t >= 55) {
+  if (p.attendees >= 45 && p.supporters >= 66 && p.crew >= 4 && p.core >= 4 && t >= 55) {
     return ["Sランク", "30人集客を、仲間と応援者の力で大きく超えて達成した。これは一人の集客ではなく、応援共創のムーブメントです。滅多に届かない景色です。"];
   }
   if (p.attendees >= 30 && (p.crew >= 1 || p.core >= 1)) {

@@ -681,6 +681,7 @@ const els = {
   learning: document.querySelector("#learning"),
   log: document.querySelector("#log"),
   weekChanges: document.querySelector("#weekChanges"),
+  countdown: document.querySelector("#countdown"),
   portGauge: document.querySelector("#portGauge"),
   portFill: document.querySelector("#portFill"),
   portRemain: document.querySelector("#portRemain"),
@@ -1142,6 +1143,17 @@ function render() {
 
   const [rank] = getRank();
   els.rankPreview.textContent = state.ended ? rank : "航海中";
+
+  if (els.countdown) {
+    if (getPhase() === "launch" && !state.ended) {
+      const left = 12 - state.week + 1;
+      els.countdown.hidden = false;
+      els.countdown.classList.toggle("final", state.week >= 12);
+      els.countdown.textContent = state.week >= 12 ? "🔥 最終週！本番は目前" : `⏰ 本番まで あと ${left} 週`;
+    } else {
+      els.countdown.hidden = true;
+    }
+  }
 
   if (els.portFill) els.portFill.style.width = `${clamp((state.people.attendees / 30) * 100, 0, 100)}%`;
   if (els.portRemain) {

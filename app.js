@@ -154,6 +154,7 @@ const cards = [
     apply: (s) => {
       addStat(s, "concept", 10);
       addStat(s, "ai", 2);
+      addStat(s, "prep", 4);
       s.multipliers.nextPost += 3;
       addLog(s, s.stats.relation < 18
         ? "キャッチコピーを磨いた。言葉は強くなったが、まだ届ける相手との接点が少ない。"
@@ -170,6 +171,7 @@ const cards = [
       addStat(s, "concept", 12);
       addStat(s, "ai", 4);
       addStat(s, "trust", -4);
+      addStat(s, "prep", 5);
       s.multipliers.nextLaunch += 5;
       addLog(s, "LPを作った。企画は伝わりやすくなったが、作業にこもった分、酒場の会話は少し静かになった。");
     },
@@ -185,6 +187,7 @@ const cards = [
       addStat(s, "relation", 5);
       addStat(s, "commitment", 4);
       addStat(s, "trust", 4);
+      addStat(s, "prep", 3);
       if (s.people.interested > 4 && chance((s.stats.roles + s.stats.relation) / 180)) {
         s.people.crew += 1;
         addStat(s, "commitment", 5);
@@ -219,6 +222,7 @@ const cards = [
     apply: (s) => {
       addStat(s, "ai", 8);
       addStat(s, "concept", 5);
+      addStat(s, "prep", 2);
       s.multipliers.nextPost += 2;
       addLog(s, "AIで企画を整理した。ワクワクは残したまま、伝わる言葉が少し増えた。");
     },
@@ -233,6 +237,7 @@ const cards = [
       addStat(s, "concept", 8);
       addStat(s, "ai", 4);
       addStat(s, "trust", -2);
+      addStat(s, "prep", 4);
       s.multipliers.nextLaunch += 5;
       addLog(s, s.people.interested > 8
         ? "LPを改善した。相談で出た言葉を反映したことで、参加導線がわかりやすくなった。"
@@ -270,6 +275,7 @@ const cards = [
       addStat(s, "concept", 5);
       addStat(s, "reach", 3);
       addStat(s, "trust", 2);
+      addStat(s, "prep", 2);
       addLog(s, `公開相談会を開いた。${gain}人が企画の背景を知り、応援の輪に近づいた。`);
     },
   },
@@ -318,6 +324,7 @@ const cards = [
       addStat(s, "trust", 8);
       addStat(s, "wom", 6);
       addStat(s, "reach", 2);
+      addStat(s, "prep", 5);
       s.people.supporters += roll(2, 5);
       addLog(s, s.stats.concept > 45
         ? "モニターで試してもらった。集まった喜びの声が積み重なり、『これは間違いない』という空気が企画を後押しした。"
@@ -610,18 +617,18 @@ const cardEffect = {
   preConsult: ["関係+", "企画+"],
   twentyGo: ["企画+", "興味+"],
   seedpost: ["興味+"],
-  oneonone: ["企画+", "仲間の芽"],
-  catchcopy: ["企画++"],
-  aiConcept: ["AI+", "企画+"],
-  lpDraft: ["企画++", "信頼-"],
+  oneonone: ["企画+", "準備+", "仲間の芽"],
+  catchcopy: ["企画++", "準備+"],
+  aiConcept: ["AI+", "企画+", "準備+"],
+  lpDraft: ["企画++", "準備+", "信頼-"],
   interest: ["興味+", "応援+"],
-  openConsult: ["応援++", "興味+"],
+  openConsult: ["応援++", "興味+", "準備+"],
   roles: ["関わりしろ+"],
   ifRole: ["関わりしろ+", "本気+"],
   rewardMenu: ["関わりしろ+"],
   crewTalk: ["本気+", "運営化"],
   wom: ["口コミ+"],
-  monitor: ["企画++", "信頼+", "声"],
+  monitor: ["企画++", "信頼+", "準備+"],
   aiRoles: ["AI+", "関わりしろ+"],
   lpImprove: ["企画+"],
   xday: ["本気+", "信頼-"],
@@ -1128,9 +1135,9 @@ function getLearning(s, chosen) {
   return fresh[roll(0, fresh.length - 1)];
 }
 
-// 当日満足度: 本番準備が主、企画の魅力が補助。これが低いと人を集めてもランクが頭打ちになる。
+// 当日満足度 ＝ 本番準備メーター。準備カードに加え、企画を作り込むカードでも少しずつ上がる。
 function getSatisfaction() {
-  return clamp(state.stats.prep + Math.round(getPillarValue("concept") * 0.25), 0, 100);
+  return clamp(state.stats.prep, 0, 100);
 }
 
 function getRank() {

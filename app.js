@@ -559,15 +559,17 @@ const cards = [
     title: "本番の準備をする",
     icon: "幕",
     phase: "launch",
-    text: "当日の進行・台本・おもてなしを整える。運営メンバーが多いほど準備は加速する（一人だと進まない）。",
+    text: "当日の進行・台本・おもてなしを整える。仲間（運営・コアメンバー）が多いほど準備は加速し、企画も磨かれる。一人だとほとんど進まない。",
     apply: (s) => {
-      const gain = 4 + s.people.crew * 3;
+      const gain = 1 + s.people.crew * 1 + s.people.core * 5;
       addStat(s, "prep", gain);
+      addStat(s, "concept", 3);
       addStat(s, "commitment", 3);
       addStat(s, "trust", 3);
-      addLog(s, s.people.crew === 0
-        ? "一人で本番の準備を始めたが、手が足りず思うように進まない。先に一緒に動く運営メンバーがほしい。"
-        : `運営メンバー${s.people.crew}人と手分けして準備を進めた。仲間がいるほど準備は一気にはかどる。`);
+      const mates = s.people.crew + s.people.core;
+      addLog(s, mates === 0
+        ? "一人で本番の準備を始めたが、できることはわずか。仲間が増えるほど準備は一気に進む。"
+        : `運営${s.people.crew}人・コア${s.people.core}人と手分けして準備。仲間がいるほど、当日に向けて準備も企画も磨かれていく。`);
     },
   },
 ];
@@ -639,7 +641,7 @@ const cardEffect = {
   live: ["興味+", "拡散+"],
   aiImprove: ["AI+"],
   lastCall: ["集客", "信頼--"],
-  prepare: ["本番準備", "運営で加速"],
+  prepare: ["準備", "仲間で加速", "企画+"],
 };
 
 const FEE_PER_HEAD = 1;
@@ -1112,7 +1114,7 @@ function getLearning(s, chosen) {
   if (ids.includes("prepare")) {
     candidates.push(
       "人を集めることと、当日満足してもらうことは別の準備です。進行・台本・おもてなしを整えるほど、満足度が上がります。",
-      "準備は一人では進みません。運営メンバーがいるほど当日の段取りは一気に整います。まず仲間を作るのが近道です。",
+      "準備は一人では進みません。運営・コアメンバーがいるほど当日の段取りは一気に整い、企画も磨かれます。まず仲間を作るのが近道です。",
       "集客がゴールではありません。来てくれた人が『来てよかった』と思える準備こそ、次回の応援につながります。",
     );
   }

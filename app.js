@@ -1188,7 +1188,7 @@ function render() {
   if (!state.ended) {
     els.runButton.textContent = need > 0 ? `カードをあと${need}枚選ぶ` : "今週を実行 ▶";
   }
-  els.learning.textContent = state.learning;
+  els.learning.textContent = getConciergeLine();
   els.phaseText.textContent = `${phaseNames[getPhase()]}: ${getPhaseDescription()}`;
 
   const progress = clamp((state.people.attendees / 30) * 72 + (state.people.core / 3) * 18 + (state.people.crew / 3) * 10, 0, 92);
@@ -1263,6 +1263,28 @@ function getPillarValue(key) {
   if (key === "relation") return Math.round((state.stats.relation * 0.7) + (state.stats.reach * 0.3));
   if (key === "concept") return Math.round((state.stats.concept * 0.72) + (state.stats.roles * 0.28));
   return Math.round((state.stats.ai * 0.72) + (state.stats.reach * 0.28));
+}
+
+// 酒場の看板娘ナビのセリフ。答えは言わず「次どうする？」と問いかけ、状況を整理して寄り添う。
+function getConciergeLine() {
+  const p = state.people;
+  const ph = getPhase();
+  const t = state.stats.trust;
+  const r = state.weekResult;
+  if (state.ended) return "おつかれさま！今回の航海、どうだった？";
+  if (t < 25) return "最近お願いが続いてるみたい…酒場の空気、ちょっと心配かも。応援や感謝は足りてる？";
+  if (r && r.tone === "bad") return "うーん、今の手はちょっと早かったかも。何が足りなかったと思う？";
+  if (ph === "seed") {
+    if (state.week === 1) return "ようこそBOOSTER酒場へ！まずは仲間と仲良くなるところから。今週はどう動く？";
+    return "いい感じに土台ができてきたね。焦って告知したくなるけど…次はどこに力を入れる？";
+  }
+  if (ph === "bond") {
+    if (p.crew >= 1) return `運営仲間が${p.crew}人になったね！この人たちと、本番に向けて何ができそう？`;
+    return "興味を持ってくれた人が出てきたね。どうやって『仲間』になってもらおうか？";
+  }
+  if (state.stats.prep < 20 && p.attendees >= 8) return "人は集まってきたね！…でも当日、みんな満足してくれそう？準備のほうはどう？";
+  if (state.week >= 12) return "いよいよ本番直前！やれること、ぜんぶやった？";
+  return "本番が近いよ。集めることと、当日の準備…両方、進んでる？";
 }
 
 function getPhaseDescription() {

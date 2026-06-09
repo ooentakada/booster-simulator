@@ -233,6 +233,59 @@ h2 {
     linear-gradient(90deg, transparent 0 20%, #2e3f4f 20% 44%, transparent 44% 56%, #2e3f4f 56% 80%, transparent 80%) 0 24px / 100% 4px no-repeat;
 }
 
+/* 酒場の看板娘ナビ（ドット絵キャラ） */
+.concierge-char {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 58px;
+  z-index: 3;
+  image-rendering: pixelated;
+}
+.cc-hair {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 26px;
+  height: 36px;
+  background: #6b3f2f;
+  border-radius: 13px 13px 5px 5px;
+}
+.cc-face {
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  width: 16px;
+  height: 15px;
+  background: #f0b783;
+  border-radius: 6px;
+}
+.cc-body {
+  position: absolute;
+  left: 3px;
+  bottom: 0;
+  width: 28px;
+  height: 30px;
+  background: var(--coral);
+  border-radius: 9px 9px 4px 4px;
+  border-top: 3px solid #fff2cf;
+}
+.concierge-bubble .cc-name {
+  display: inline-block;
+  margin-bottom: 3px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--coral);
+  color: #fff;
+  font-size: 0.56rem;
+  font-weight: 900;
+}
+.concierge-bubble #learning {
+  display: block;
+}
+
 .harbor {
   position: relative;
   min-height: 0;

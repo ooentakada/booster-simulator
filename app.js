@@ -806,6 +806,7 @@ const els = {
   core: document.querySelector("#core"),
   statusList: document.querySelector("#statusList"),
   cards: document.querySelector("#cards"),
+  pickedSlots: document.querySelector("#pickedSlots"),
   selectedCount: document.querySelector("#selectedCount"),
   timeNow: document.querySelector("#timeNow"),
   timeMax: document.querySelector("#timeMax"),
@@ -988,6 +989,13 @@ function runWeek() {
   state.phaseAnnounce = newPhase !== oldPhase ? newPhase : null;
   drawHand();
   render();
+  // 実行後は「今週の変化」まで自動スクロール（結果を見逃さない）。
+  // レイアウト確定後に呼ばないとスクロールが空振りするため少し遅らせる。
+  if (els.weekChanges && typeof els.weekChanges.scrollIntoView === "function") {
+    setTimeout(() => {
+      els.weekChanges.scrollIntoView({ block: "start" });
+    }, 80);
+  }
 }
 
 const phaseIntro = {
@@ -1384,10 +1392,34 @@ function render() {
 
   renderStats();
   renderCards();
+  renderPickedSlots();
   renderLog();
   renderWeekChanges();
   renderParty();
   saveState();
+}
+
+// 選択中の3枠を実行ボタンの上に常時表示。スクロールで戻らなくても確認・解除できる。
+function renderPickedSlots() {
+  if (!els.pickedSlots) return;
+  if (state.ended) {
+    els.pickedSlots.innerHTML = "";
+    return;
+  }
+  const slots = [];
+  for (let i = 0; i < 3; i++) {
+    const id = state.selected[i];
+    if (id) {
+      const card = cards.find((c) => c.id === id);
+      slots.push(`<button class="slot filled" data-slot-card="${id}" type="button" title="タップで選択解除">${card.icon}｜${card.title} ✕</button>`);
+    } else {
+      slots.push(`<span class="slot empty">${i + 1}枚目</span>`);
+    }
+  }
+  els.pickedSlots.innerHTML = slots.join("");
+  els.pickedSlots.querySelectorAll("[data-slot-card]").forEach((button) => {
+    button.addEventListener("click", () => selectCard(button.dataset.slotCard));
+  });
 }
 
 function renderWeekChanges() {

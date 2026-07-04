@@ -410,6 +410,7 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-margin-top: 84px;
 }
 
 .week-changes.empty {
@@ -671,12 +672,55 @@ h1, h2, h3 {
   color: var(--danger);
 }
 
-/* ---------- 実行ボタン（sticky） ---------- */
+/* ---------- 実行ボタン（sticky）＋選択中スロット ---------- */
 .run-dock {
   position: sticky;
-  bottom: 12px;
+  bottom: 8px;
   z-index: 20;
-  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  margin: 0 -4px;
+  background: rgba(253, 248, 239, 0.88);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  box-shadow: 0 -2px 14px rgba(90, 62, 40, 0.08);
+}
+
+.picked-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.picked-slots:empty {
+  display: none;
+}
+
+.slot {
+  font-size: 0.78rem;
+  font-weight: 900;
+  border-radius: 999px;
+  padding: 8px 8px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.slot.empty {
+  border: 2px dashed #d9cbb4;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.slot.filled {
+  border: 2px solid var(--primary);
+  background: #fff;
+  color: var(--primary-dark);
+  cursor: pointer;
 }
 
 .primary-button {
@@ -1148,6 +1192,51 @@ dialog::backdrop {
 @media (max-width: 600px) {
   .help-label {
     display: none;
+  }
+}
+
+/* スマホではカードを圧縮: 説明は2行まで（選ぶと全文）。6枚がほぼ1画面に収まる */
+@media (max-width: 559px) {
+  .cards {
+    gap: 8px;
+  }
+
+  .card-button {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .card-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
+  .card-name {
+    font-size: 0.98rem;
+  }
+
+  .card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .card-button.selected .card-text {
+    -webkit-line-clamp: unset;
+  }
+
+  .card-tags {
+    gap: 4px;
+  }
+
+  .tag {
+    font-size: 0.72rem;
+    padding: 2px 8px;
   }
 }
 

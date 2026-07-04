@@ -10,6 +10,7 @@ const initialState = {
     reach: 0,
     wom: 0,
     prep: 0,
+    chain: 0,
     trust: 50,
   },
   people: {
@@ -47,9 +48,35 @@ const pillarMeta = [
   ["concept", "企画の魅力", "#d95043"],
   ["ai", "AI仕掛け力", "#2f9aa0"],
   ["wom", "口コミ力", "#e08a2b"],
+  ["chain", "連鎖力", "#b0486e"],
   ["prep", "本番準備", "#c77d3a"],
   ["trust", "信頼残高", "#7b5fc6"],
 ];
+
+// ===== RSMの核となる計算式 =====
+// 反応 ＝ 言葉の力 × 関係資本（信頼残高・関係性）。
+// 関係資本が薄いと、どんなにいい言葉でも反応はほぼ返らない（ゆるぼの大前提）。
+function kizunaFactor(s) {
+  return clamp((s.stats.trust * 0.7 + s.stats.relation * 0.5) / 66, 0.12, 1.25);
+}
+
+// 言葉の力。AIに全部書かせる（aiFlat）と平均化して温度が下がり、反応が伸びない。
+// 反応系カードを1回使うたびにペナルティは1段階抜ける（言葉を出して学ぶ）。
+function wordPower(s) {
+  let p = 1;
+  const flat = s.multipliers.aiFlat || 0;
+  if (flat > 0) {
+    p = Math.max(0.35, Math.pow(0.6, flat));
+    s.multipliers.aiFlat = flat - 1;
+  }
+  return p;
+}
+
+// 連鎖係数R ＝ 反応者が次の発信者・応援者になる度合い。R > 1 で連鎖は勝手に広がり続ける。
+function getChainR(s) {
+  const r = 0.55 + s.stats.chain * 0.007 + s.stats.wom * 0.0022 + s.people.crew * 0.02 + s.people.core * 0.03;
+  return Math.round(clamp(r, 0, 1.6) * 100) / 100;
+}
 
 const cards = [
   {
@@ -204,13 +231,14 @@ const cards = [
     phase: "seed",
     text: "完成前の企画を出して、反応を見にいく。",
     apply: (s) => {
-      const gain = Math.max(0, Math.round((s.stats.concept + s.stats.relation) / 18) + roll(0, 4) + s.multipliers.nextPost);
+      const raw = (s.stats.concept + s.stats.relation) / 18 + roll(0, 4) + s.multipliers.nextPost;
+      const gain = Math.max(0, Math.round(raw * kizunaFactor(s) * wordPower(s) * 1.2));
       s.people.interested += gain;
       s.people.supporters += Math.max(0, Math.floor(gain / 2));
       s.multipliers.nextPost = 0;
       addLog(s, gain > 3
         ? `企画の種を投稿した。${gain}人が『気になる』と反応した。`
-        : "企画の種を投稿したが、反応は薄かった。先に関係性の土台と企画の言葉を温めたい。");
+        : "企画の種を投稿したが、反応は薄かった。反応は言葉の力×信頼残高。先に応援貯金で土台を温めたい。");
     },
   },
   {
@@ -246,20 +274,20 @@ const cards = [
   },
   {
     id: "interest",
-    title: "興味ある人いますか？",
-    icon: "?",
+    title: "ゆるぼを出す",
+    icon: "ゆ",
     phase: "bond",
-    text: "企画への1つ目のYESを取りにいく。",
+    text: "「こんなこと考えてるんだけど、興味ある人いる？」— 売り込まず、ゆるく募集して反応を先に取る。反応は 言葉の力×信頼残高 で決まる。",
     apply: (s) => {
-      const base = (s.stats.relation * 0.12) + (s.stats.concept * 0.13) + s.multipliers.nextPost;
-      const gain = Math.max(0, Math.round(base + roll(-2, 5)));
+      const base = (s.stats.relation * 0.1) + (s.stats.concept * 0.13) + s.multipliers.nextPost;
+      const gain = Math.max(0, Math.round(base * kizunaFactor(s) * wordPower(s) * 1.35 + roll(-2, 5)));
       addStat(s, "trust", -3);
       s.people.interested += gain;
       s.people.supporters += Math.floor(gain * 0.7);
       s.multipliers.nextPost = 0;
       addLog(s, gain >= 8
-        ? `募集の前段階として興味を聞いた。${gain}人が手を挙げ、酒場がざわつき始めた。`
-        : "興味を聞いたが、まだ反応は少ない。投稿だけではなく、普段のリアクションと壁打ちが必要そうだ。");
+        ? `ゆるぼを出した。${gain}人が「興味ある！」と手を挙げ、酒場がざわつき始めた。反応から企画が育っていく。`
+        : "ゆるぼを出したが、反応は少ない。反応は言葉の力×信頼残高。先に応援貯金（リアクション・応援コメント）を積みたい。");
     },
   },
   {
@@ -471,7 +499,7 @@ const cards = [
       const base = (s.stats.concept * 0.11) + (s.stats.relation * 0.08) + (s.stats.reach * 0.06) + (s.people.supporters * 0.025) + s.multipliers.nextLaunch;
       const weakLaunchPenalty = s.stats.relation < 35 || s.stats.concept < 30 ? 0.58 : 1;
       const trustPenalty = s.stats.trust < 25 ? 0.45 : s.stats.trust < 45 ? 0.75 : 1;
-      const rawGain = Math.max(0, Math.round((base * weakLaunchPenalty * trustPenalty) + roll(-2, 5)));
+      const rawGain = Math.max(0, Math.round((base * weakLaunchPenalty * trustPenalty * wordPower(s)) + roll(-2, 5)));
       const gain = s.people.crew + s.people.core === 0 ? Math.min(rawGain, 8) : rawGain;
       s.people.attendees += gain;
       s.multipliers.nextLaunch = 0;
@@ -510,7 +538,7 @@ const cards = [
     phase: "launch",
     text: "背景や想いをリアルタイムで届ける。",
     apply: (s) => {
-      const gain = Math.round((s.stats.concept + s.stats.reach) / 22) + roll(1, 7);
+      const gain = Math.max(0, Math.round(((s.stats.concept + s.stats.reach) / 22 + roll(1, 7)) * wordPower(s)));
       addStat(s, "trust", -4);
       s.people.interested += gain;
       addStat(s, "reach", 6);
@@ -546,7 +574,7 @@ const cards = [
       const base = (s.stats.concept * 0.1) + (s.stats.reach * 0.08) + (s.stats.commitment * 0.08) + team * 0.8 + s.multipliers.nextLaunch;
       addStat(s, "trust", -12);
       const trustPenalty = s.stats.trust < 25 ? 0.45 : s.stats.trust < 45 ? 0.7 : 1;
-      const gain = Math.max(0, Math.round((base * trustPenalty) + roll(-2, 7)));
+      const gain = Math.max(0, Math.round((base * trustPenalty * wordPower(s)) + roll(-2, 7)));
       s.people.attendees += gain;
       s.multipliers.nextLaunch = 0;
       addLog(s, gain >= 10
@@ -570,6 +598,76 @@ const cards = [
       addLog(s, mates === 0
         ? "一人で本番の準備を始めたが、できることはわずか。仲間が増えるほど準備は一気に進む。"
         : `運営${s.people.crew}人・コア${s.people.core}人と手分けして準備。仲間がいるほど、当日に向けて準備も企画も磨かれていく。`);
+    },
+  },
+  {
+    id: "proxyYurubo",
+    title: "代理ゆるぼをお願いする",
+    icon: "横",
+    phase: "launch",
+    text: "「私も行きたいんだけど、一緒に行く人いる？」— 反応してくれた人に、その人の言葉でゆるぼを出してもらう（横の連鎖）。口コミ設計と応援者が土台。",
+    apply: (s) => {
+      if (s.stats.wom < 22 || s.people.supporters < 12) {
+        addStat(s, "chain", 4);
+        addLog(s, "代理ゆるぼをお願いしたが、渡せる言葉がなくて広がらなかった。先に口コミを設計し、応援者を増やしたい。");
+        return;
+      }
+      addStat(s, "chain", 16);
+      addStat(s, "reach", 5);
+      const gain = Math.max(1, Math.round((s.people.supporters * 0.2 + s.stats.wom * 0.16) * kizunaFactor(s)) + roll(1, 4));
+      s.people.attendees += gain;
+      s.people.supporters += roll(1, 5);
+      addLog(s, `仲間が自分の言葉でゆるぼを出してくれた。${gain}人が、あなたの影響圏の外からやって来た。これが横の連鎖。`);
+    },
+  },
+  {
+    id: "nextHero",
+    title: "「あなたも？」と声をかける",
+    icon: "縦",
+    phase: "bond",
+    text: "反応してくれた人に「次はあなたの番。みんなで応援するよ」— 反応者を次の主役にする（縦の連鎖）。反応で終わらせない。",
+    apply: (s) => {
+      addStat(s, "chain", 13);
+      addStat(s, "trust", 4);
+      addStat(s, "commitment", 5);
+      if (s.people.supporters >= 8 && chance(0.35 + s.stats.relation * 0.003)) {
+        s.people.crew += 1;
+        s.people.supporters += roll(2, 6);
+        addLog(s, "「あなたも何かやってみない？」— 応援してくれていた人が、自分の企画を持つ仲間になった。縦の連鎖で場が増えていく。");
+      } else {
+        s.people.supporters += roll(1, 4);
+        addLog(s, "反応をくれた人に、次の主役の椅子を差し出した。すぐ座らなくても、この声かけが連鎖の種になる。");
+      }
+    },
+  },
+  {
+    id: "aiAllIn",
+    title: "AIに全部書かせる",
+    icon: "楽",
+    phase: "seed",
+    text: "告知文もゆるぼも、ぜんぶAI任せ。ラクだし速いし、それっぽい。……それっぽい、だけかも。",
+    apply: (s) => {
+      addStat(s, "ai", 8);
+      addStat(s, "concept", 2);
+      addStat(s, "relation", -3);
+      addStat(s, "trust", -5);
+      s.multipliers.aiFlat = (s.multipliers.aiFlat || 0) + 1;
+      addLog(s, "AIに全部書かせた。それっぽい文章が量産されたが、どれにも体温がない。平均化した言葉は、誰の心にも刺さらない。");
+    },
+  },
+  {
+    id: "aiOneTen",
+    title: "自分の一行をAIで10に",
+    icon: "10",
+    phase: "seed",
+    text: "熱量が乗る一行（得意フレーズ）はまず自分で書く。AIには広げる・削る・チェックだけさせる。AIは0→1じゃなく1→10。",
+    apply: (s) => {
+      addStat(s, "ai", 7);
+      addStat(s, "concept", 9);
+      addStat(s, "prep", 2);
+      s.multipliers.nextPost += 4;
+      if (s.multipliers.aiFlat) s.multipliers.aiFlat = 0;
+      addLog(s, "まず自分の言葉で一行書き、AIに切り口20個へ広げさせた。熱はそのまま、届く形だけが増えた。");
     },
   },
 ];
@@ -608,6 +706,10 @@ const cardCost = {
   aiImprove: { time: 4, money: 3 },
   lastCall: { time: 4, money: 6 },
   prepare: { time: 4, money: 2 },
+  proxyYurubo: { time: 3, money: 0 },
+  nextHero: { time: 3, money: 0 },
+  aiAllIn: { time: 2, money: 3 },
+  aiOneTen: { time: 4, money: 3 },
 };
 
 // カードが主に効く指標（カード上に表示してバーを見に行かなくて済むように）。
@@ -642,6 +744,10 @@ const cardEffect = {
   aiImprove: ["AI+"],
   lastCall: ["集客", "信頼--"],
   prepare: ["準備", "仲間で加速", "企画+"],
+  proxyYurubo: ["連鎖++", "集客", "口コミ次第"],
+  nextHero: ["連鎖+", "運営化", "信頼+"],
+  aiAllIn: ["AI+", "信頼-", "言葉の温度↓"],
+  aiOneTen: ["企画++", "AI+", "次の投稿+"],
 };
 
 const FEE_PER_HEAD = 1;
@@ -663,7 +769,7 @@ const phaseNames = {
   launch: "集客",
 };
 
-const SAVE_KEY = "booster-sim-save-v4";
+const SAVE_KEY = "booster-sim-save-v5";
 const INTRO_KEY = "booster-sim-intro-seen-v1";
 
 function loadState() {
@@ -720,6 +826,7 @@ const els = {
   dialog: document.querySelector("#resultDialog"),
   resultRank: document.querySelector("#resultRank"),
   resultType: document.querySelector("#resultType"),
+  resultPhase: document.querySelector("#resultPhase"),
   resultMessage: document.querySelector("#resultMessage"),
   resultAdvice: document.querySelector("#resultAdvice"),
   finalAttendees: document.querySelector("#finalAttendees"),
@@ -772,9 +879,9 @@ function getPhase(week = state.week) {
 
 // 各フェーズの全カードプール（毎週ここからランダムに手札を配る）。
 const cardPool = {
-  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "interest", "xday", "catchcopy", "aiConcept", "lpDraft", "prepare", "announce"],
-  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "drink", "xday", "aiRoles", "lpImprove", "prepare", "comment", "announce"],
-  launch: ["xday", "report", "thanksBoost", "referral", "wom", "prepare", "live", "aiImprove", "lastCall", "announce"],
+  seed: ["react", "comment", "drink", "spotlight", "preConsult", "oneonone", "twentyGo", "seedpost", "interest", "xday", "catchcopy", "aiConcept", "aiOneTen", "aiAllIn", "lpDraft", "prepare", "announce"],
+  bond: ["interest", "openConsult", "monitor", "roles", "ifRole", "rewardMenu", "crewTalk", "wom", "nextHero", "drink", "xday", "aiRoles", "aiOneTen", "aiAllIn", "lpImprove", "prepare", "comment", "announce"],
+  launch: ["xday", "report", "thanksBoost", "referral", "proxyYurubo", "nextHero", "wom", "prepare", "live", "aiImprove", "aiAllIn", "lastCall", "announce"],
 };
 
 const HAND_SIZE = 6;
@@ -859,6 +966,7 @@ function runWeek() {
   applyPassiveEvents(state, chosen);
   scaleGain("attendees", attBefore, ATT_SCALE);
   scaleGain("supporters", supBefore, SUP_SCALE);
+  applyChainDynamics(state, chosen);
   normalizePeople(state);
   const income = Math.max(0, state.people.attendees - attBefore) * FEE_PER_HEAD;
   state.resources.money = clamp(state.resources.money - moneyCost + income, 0, 999);
@@ -892,6 +1000,29 @@ function scaleGain(key, beforeVal, factor) {
   if (delta > 0) state.people[key] = beforeVal + Math.round(delta * factor);
 }
 
+// 連鎖のダイナミクス。R > 1 なら参加者が「勝手に」増え続ける。
+// 逆に、反応をもらいっぱなしで連鎖の手を打たないと連鎖力は週ごとに減衰する。
+const CHAIN_GROWTH = 0.6;
+function applyChainDynamics(s, chosen) {
+  const ids = chosen.map((c) => c.id);
+  const usedChainCard = ids.includes("proxyYurubo") || ids.includes("nextHero");
+  if (!usedChainCard && s.stats.chain > 0) {
+    addStat(s, "chain", -5);
+    if (s.stats.chain < 25 && chance(0.3)) {
+      addLog(s, "反応をもらいっぱなしになっている。反応で終わらせず、くれた人を次の主役にすると連鎖が続く。");
+    }
+  }
+  const R = getChainR(s);
+  if (R > 1 && s.people.attendees >= 5) {
+    const growth = Math.round(s.people.attendees * (R - 1) * CHAIN_GROWTH);
+    if (growth > 0) {
+      s.people.attendees += growth;
+      s.people.supporters += Math.ceil(growth / 2);
+      addLog(s, `連鎖係数R=${R}。あなたが動かなくても、仲間のゆるぼ経由で${growth}人が申し込んだ。連鎖が回っている！`);
+    }
+  }
+}
+
 function snapshot() {
   return {
     attendees: state.people.attendees,
@@ -902,6 +1033,7 @@ function snapshot() {
     concept: getPillarValue("concept"),
     ai: getPillarValue("ai"),
     wom: state.stats.wom,
+    chain: state.stats.chain,
     trust: state.stats.trust,
   };
 }
@@ -917,6 +1049,7 @@ function buildWeekResult(before, after, chosen) {
     concept: "企画の魅力",
     ai: "AI",
     wom: "口コミ力",
+    chain: "連鎖力",
     trust: "信頼",
   };
   const changes = [];
@@ -932,8 +1065,14 @@ function buildWeekResult(before, after, chosen) {
   let verdict = "";
   let tone = "neutral";
   if (ids.includes("announce") && getPhase(state.week) === "seed" && before.relation < 35) {
-    verdict = "関係性が薄いまま告知 → 反応が鈍い。先に応援・相談で土台を作ろう。";
+    verdict = "関係性が薄いまま告知 → 反応が鈍い。反応は言葉×信頼残高。先に応援貯金を。";
     tone = "bad";
+  } else if (ids.includes("aiAllIn")) {
+    verdict = "AI任せの言葉は温度が乗らず、次の反応が鈍る。得意フレーズは自分で書こう（AIは1→10）。";
+    tone = "warn";
+  } else if (after.chain - before.chain >= 10) {
+    verdict = "反応者を次の主役にした。連鎖係数Rが上がると、集客が勝手に回り始める。";
+    tone = "good";
   } else if (ids.includes("referral") && before.wom < 25) {
     verdict = "口コミ未設計のまま紹介依頼 → ほとんど広がらず。先に口コミを設計しよう。";
     tone = "bad";
@@ -1072,6 +1211,30 @@ function getLearning(s, chosen) {
     candidates.push(
       "リアクションは目的ではなく、関係性の入口。募集したときに反応が返ってくる土台になります。",
       "いきなり募集しても、酒場は振り向いてくれません。先に誰かの挑戦に反応すると、会話の温度が上がります。",
+      "これが『応援貯金』。反応は 言葉の力 × 信頼残高 で決まるので、先に応援した人からゆるぼへの反応が返ってきます。",
+    );
+  }
+  if (ids.includes("proxyYurubo")) {
+    candidates.push(
+      "横の連鎖＝同じ企画を、反応してくれた人の言葉と影響圏で広げてもらう。固有名詞を外した『渡せる言葉』が鍵です。",
+      "自分の告知が届く範囲には限界があります。仲間の『私も行きたいんだけど』の一言は、あなたの言葉より遠くへ届きます。",
+    );
+  }
+  if (ids.includes("nextHero")) {
+    candidates.push(
+      "縦の連鎖＝反応してくれた人を次の主役にする。『あなたも？』の一言で、応援者が発信者に変わります。",
+      "連鎖係数Rが1を超えると、集客は勝手に広がり続けます。反応で終わらせないことがR>1の条件です。",
+    );
+  }
+  if (ids.includes("aiAllIn")) {
+    candidates.push(
+      "AIに0→1をさせると言葉が平均化して死にます。熱量が乗る一行（得意フレーズ）は、人間にしか書けません。",
+      "AIで量産した言葉は、それっぽいのに刺さらない。まず自分で1行書いてから、AIに広げさせましょう。",
+    );
+  }
+  if (ids.includes("aiOneTen")) {
+    candidates.push(
+      "AIは0→1ではなく1→10。整理・切り口の量産・推敲・チェックに使うと、熱を保ったまま届く形が増えます。",
     );
   }
   if (ids.includes("drink")) {
@@ -1260,6 +1423,7 @@ function getPillarValue(key) {
   if (key === "trust") return state.stats.trust;
   if (key === "wom") return state.stats.wom;
   if (key === "prep") return state.stats.prep;
+  if (key === "chain") return state.stats.chain || 0;
   if (key === "relation") return Math.round((state.stats.relation * 0.7) + (state.stats.reach * 0.3));
   if (key === "concept") return Math.round((state.stats.concept * 0.72) + (state.stats.roles * 0.28));
   return Math.round((state.stats.ai * 0.72) + (state.stats.reach * 0.28));
@@ -1288,9 +1452,9 @@ function getConciergeLine() {
 }
 
 function getPhaseDescription() {
-  if (getPhase() === "seed") return "まずは関係性の土台づくり。";
+  if (getPhase() === "seed") return "まずは応援貯金。反応は「言葉の力×信頼残高」で決まる。";
   if (getPhase() === "bond") return "興味を、関わり方へのYESに変える。";
-  return "仲間と応援者の力で30人を目指す。";
+  return "仲間と連鎖の力で30人へ。反応をくれた人を次の主役に。";
 }
 
 function renderStats() {
@@ -1381,6 +1545,13 @@ function getDiagnosis() {
     };
   }
 
+  if (p.attendees >= 30 && state.stats.chain >= 40) {
+    return {
+      type: "連鎖点火型",
+      advice: "反応者を次の主役にできています。連鎖係数Rが1を超えると集客は勝手に回り続けます。次は連鎖で来た人が『自分の企画』を持てるように応援すると、場そのものが増殖します。",
+    };
+  }
+
   if (p.attendees >= 30 && p.core >= 3) {
     return {
       type: "応援共創型",
@@ -1392,6 +1563,13 @@ function getDiagnosis() {
     return {
       type: "一人で集めきり型",
       advice: "集客力はあります。ただ、仲間化が弱いので次回は告知前に『誰がどう関われるか』を出して、企画へのYESを関わり方へのYESに変えましょう。",
+    };
+  }
+
+  if (state.stats.chain >= 40 && p.attendees >= 15) {
+    return {
+      type: "連鎖点火型",
+      advice: "反応者を次の主役にする動きができています。連鎖係数Rが1を超えると集客は勝手に回り続けます。次は連鎖に火がつく前の土台（応援貯金・口コミ設計）を早めに仕込むと、30人の壁を連鎖が越えてくれます。",
     };
   }
 
@@ -1429,9 +1607,35 @@ function getDiagnosis() {
   };
 }
 
-// BOOSTERの案内ページURL。設定すると結果画面にCTAボタンが出る（空なら非表示）。
-const CTA_URL = "";
+// CTA設定。urlを入れると結果画面にボタンが出る（空なら非表示）。
+// RSMフロントセミナー or BOOSTER導線のURLが決まったらここに1行入れるだけで開通する。
+const CTA = {
+  url: "",
+  label: "この感覚、リアルの集客でやってみる →",
+};
 const NEXT_STEP_KEY = "booster-sim-nextstep-v1";
+
+// 診断タイプ → RSM成長5フェーズ（出せる→磨ける→繋がる→連鎖する→育てる）のマッピング。
+const rsmPhaseMap = {
+  "土台づくり型": [1, "出せる"],
+  "信頼残高ぎりぎり型": [1, "出せる"],
+  "企画先行・関係性不足型": [2, "磨ける"],
+  "関係性先行・企画磨き待ち型": [2, "磨ける"],
+  "AI加速・人肌不足型": [2, "磨ける"],
+  "集客先行・準備不足型": [2, "磨ける"],
+  "一人で集めきり型": [3, "繋がる"],
+  "運営候補育成型": [3, "繋がる"],
+  "連鎖点火型": [4, "連鎖する"],
+  "応援共創型": [5, "育てる"],
+};
+
+function getRsmPhaseLine(type) {
+  const [num, name] = rsmPhaseMap[type] || [1, "出せる"];
+  const ladder = ["出せる", "磨ける", "繋がる", "連鎖する", "育てる"]
+    .map((n, i) => (i + 1 === num ? `【${n}】` : n))
+    .join(" → ");
+  return `RSM成長マップ: いまのあなたはフェーズ${num}「${name}」（${ladder}）／最終 連鎖係数R=${getChainR(state)}`;
+}
 
 function showResult() {
   const [rank, message] = getRank();
@@ -1440,6 +1644,7 @@ function showResult() {
   els.resultType.textContent = diagnosis.type;
   els.resultMessage.textContent = message;
   els.resultAdvice.textContent = diagnosis.advice;
+  if (els.resultPhase) els.resultPhase.textContent = getRsmPhaseLine(diagnosis.type);
   els.finalAttendees.textContent = state.people.attendees;
   els.finalSupporters.textContent = state.people.supporters;
   els.finalCrew.textContent = state.people.crew;
@@ -1453,8 +1658,9 @@ function showResult() {
     } catch {}
   }
   if (els.ctaButton) {
-    if (CTA_URL) {
-      els.ctaButton.href = CTA_URL;
+    if (CTA.url) {
+      els.ctaButton.href = CTA.url;
+      els.ctaButton.textContent = CTA.label;
       els.ctaButton.hidden = false;
     } else {
       els.ctaButton.hidden = true;
@@ -1471,6 +1677,7 @@ async function copyResult() {
     "応援共創シミュレーターをやってみました",
     `結果: ${rank}`,
     `タイプ: ${diagnosis.type}`,
+    getRsmPhaseLine(diagnosis.type),
     `参加者: ${state.people.attendees}/30`,
     `応援者: ${state.people.supporters}/100`,
     `運営: ${state.people.crew}/3`,
@@ -1510,6 +1717,7 @@ const SHARE_URL = "https://ooentakada.github.io/booster-simulator/";
 
 const typeHook = {
   "応援共創型": "告知から始めちゃう人こそ遊んでほしい",
+  "連鎖点火型": "自分が動かなくても人が集まる感覚、クセになる",
   "一人で集めきり型": "集客はできた。でも“みんなで”集める難しさを痛感",
   "信頼残高ぎりぎり型": "お願いばかりで信頼が枯れた…耳が痛い",
   "企画先行・関係性不足型": "企画が良くても人は動かない、を体感",
@@ -1519,11 +1727,12 @@ const typeHook = {
   "土台づくり型": "まずは関係性の土台から。ここがスタート",
 };
 
+// シェア文言そのものを「ゆるぼ」の型にする。シェアが横連鎖の練習になる。
 function buildShareText() {
   const [rank] = getRank();
   const d = getDiagnosis();
   const hook = typeHook[d.type] || "集客の考え方が5分で変わる";
-  return `応援共創シミュレーターで遊んだら【${rank}・${d.type}】だった🚢\n12週で参加者${state.people.attendees}人を“みんなで”集めた。${hook}。`;
+  return `イベント集客ゲームで遊んだら【${rank}・${d.type}】だった🚢\n${hook}。\nこれリアルの集客でやったらけっこう怖いやつ…。誰か一緒に挑戦してみない？（ゆるぼ）`;
 }
 
 function shareToX() {
@@ -1543,6 +1752,7 @@ const rankColor = {
 // 診断タイプ別の"称号キャラ"
 const typeBadge = {
   "応援共創型": { title: "みんなで航海するキャプテン", color: "#4f8d5d" },
+  "連鎖点火型": { title: "連鎖を起こす仕掛け人", color: "#b0486e" },
   "一人で集めきり型": { title: "孤高のソロ船長", color: "#cc6f2b" },
   "信頼残高ぎりぎり型": { title: "飛ばしすぎた開拓者", color: "#d95043" },
   "企画先行・関係性不足型": { title: "アイデア先行の発明家", color: "#7b5fc6" },

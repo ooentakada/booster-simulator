@@ -1090,6 +1090,17 @@ h2 {
   font-weight: 800;
 }
 
+.result-phase {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(176, 72, 110, 0.12);
+  border: 2px dashed rgba(176, 72, 110, 0.45);
+  color: #7c3350;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .result-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

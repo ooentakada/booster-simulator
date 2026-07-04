@@ -17,105 +17,112 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="game-shell">
-      <header class="topbar">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">⛵</span>
         <div>
-          <p class="eyebrow">BOOSTER prototype</p>
-          <h1>30人を仲間と集客する 応援共創シミュレーター</h1>
+          <p class="brand-eyebrow">BOOSTER</p>
+          <h1>応援共創シミュレーター</h1>
         </div>
-        <div class="topbar-right">
-          <button id="helpButton" class="ghost-button" type="button">？遊び方</button>
-          <div class="week-badge">
-            <span>Week</span>
-            <strong id="week">1</strong>
-            <small>/ 12</small>
-          </div>
+      </div>
+      <div class="topbar-right">
+        <button id="helpButton" class="help-button" type="button">？<span class="help-label">遊び方</span></button>
+        <div class="week-badge">
+          <span>WEEK</span>
+          <strong id="week">1</strong>
+          <small>/12</small>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <section class="top-stage">
-        <section class="scene" aria-label="酒場と出港の様子">
-          <div class="tavern">
-            <div class="sign">BOOSTER酒場</div>
-            <div class="window"></div>
-            <div class="door"></div>
-            <div class="party" id="party"></div>
-            <div class="concierge-char" title="酒場の看板娘ナビ">
-              <span class="cc-hair"></span>
-              <span class="cc-face"></span>
-              <span class="cc-body"></span>
-            </div>
-          </div>
-          <div class="harbor">
-            <div class="sea">
-              <div class="ship" id="ship">
-                <div class="sail"></div>
-                <div class="mast"></div>
-                <div class="hull"></div>
-              </div>
-            </div>
-            <div class="goal-flag" title="船が右の旗に近づくほど出港（イベント成功）に近づきます"><span class="goal-flag-icon">🏁</span><span class="goal-flag-label">出港<br/>ゴール</span></div>
-            <div class="vision-flag concierge-bubble"><span class="cc-name">看板娘ナビ</span><span id="learning">ようこそBOOSTER酒場へ！まずは仲間と仲良くなるところから。今週はどう動く？</span></div>
-          </div>
-        </section>
-
-        <aside class="panel log-panel">
-          <div class="panel-head">
-            <h2>酒場ログ</h2>
-            <span class="small-label" id="rankPreview">準備中</span>
-          </div>
-          <ol class="log" id="log"></ol>
-        </aside>
+    <main class="shell">
+      <!-- ナビの一言 -->
+      <section class="navi-card" aria-label="看板娘ナビ">
+        <div class="navi-avatar" aria-hidden="true">🍻</div>
+        <div class="navi-bubble">
+          <span class="navi-name">看板娘ナビ</span>
+          <p id="learning">ようこそBOOSTER酒場へ！まずは仲間と仲良くなるところから。今週はどう動く？</p>
+        </div>
       </section>
 
-      <section class="dashboard">
-        <aside class="panel metrics-panel">
-          <div class="panel-head">
-            <h2>出港準備</h2>
-            <button id="resetButton" class="icon-button" title="最初から">↺</button>
+      <!-- 出港ボード -->
+      <section class="board" aria-label="出港ボード">
+        <div class="board-head">
+          <h2>⚓ 出港ボード</h2>
+          <span id="rankPreview" class="rank-chip">航海中</span>
+        </div>
+        <div class="attendee-line">
+          <span class="attendee-label">参加者</span>
+          <strong id="attendees">0</strong>
+          <span class="attendee-goal">/ 30人</span>
+          <span id="portRemain" class="port-remain">出港まで あと 30 人</span>
+        </div>
+        <div class="port-gauge" id="portGauge">
+          <div class="port-bar">
+            <div class="port-fill" id="portFill"></div>
+            <div class="ship-marker" id="ship" aria-hidden="true">⛵</div>
           </div>
-          <div class="goal-list">
-            <div title="イベントに申し込んでくれた人。ゴールは30人。"><span>参加者</span><strong id="attendees">0</strong><small>/30</small></div>
-            <div title="リアクション・コメント・シェアなどで支えてくれる人。母数が増えるほど集客が伸びやすい。"><span>応援者</span><strong id="supporters">0</strong><small>/100</small></div>
-            <div title="受付・紹介・進行など、役割を持って一緒に動いてくれる人。"><span>運営</span><strong id="crew">0</strong><small>/3</small></div>
-            <div title="企画を自分ごととして本気で伴走してくれる人。仲間化の最終形。"><span>コアメンバー</span><strong id="core">0</strong><small>/3</small></div>
+        </div>
+        <div class="crew-chips">
+          <div class="chip" title="リアクション・コメント・シェアなどで支えてくれる人。多いほど集客が伸びやすい。">
+            <span>🙌 応援者</span><strong id="supporters">0</strong>
           </div>
-          <div class="resource-row">
-            <div class="resource" title="毎週使える持ち時間。行動で消費し、毎週回復します。飲み・LP・公開相談・ライブ・口コミ設計などの重い行動は時間を多く使い、週に1つしか入りません。">
-              <span>⏳ 今週の時間</span><strong><span id="timeNow">11</span>/<span id="timeMax">11</span></strong>
-            </div>
-            <div class="resource" title="累積の資金。LP・AI・広告・会場などお金で動く行動で減ります。応援や相談は無料。告知や紹介で参加が決まると参加費が少し戻ります。">
-              <span>💰 資金</span><strong id="money">30</strong>
-            </div>
+          <div class="chip" title="受付・紹介・進行など、役割を持って一緒に動いてくれる人。">
+            <span>🛠 運営</span><strong id="crew">0</strong>
           </div>
-          <p class="goal-hint">数字にカーソルを乗せると説明が出ます。応援・相談は無料、AI・LP・広告はお金がかかります。</p>
-          <div class="status-list" id="statusList"></div>
-        </aside>
+          <div class="chip" title="企画を自分ごとで本気伴走してくれる人。仲間化の最終形。">
+            <span>👑 コア</span><strong id="core">0</strong>
+          </div>
+        </div>
+        <div class="party" id="party" aria-hidden="true"></div>
+      </section>
 
-        <section class="panel action-panel">
-          <div class="panel-head">
-            <div>
-              <h2>今週の行動</h2>
-              <p id="phaseText">種まき: まずは関係性の土台づくり。</p>
-            </div>
-            <div class="selection-count"><span id="selectedCount">0</span>/3</div>
-          </div>
-          <div class="countdown" id="countdown" hidden></div>
-          <div class="port-gauge" id="portGauge">
-            <div class="port-bar"><div class="port-fill" id="portFill"></div></div>
-            <span class="port-remain" id="portRemain">出港まで あと 30 人</span>
-          </div>
-          <div class="week-changes empty" id="weekChanges"></div>
-          <div class="cards" id="cards"></div>
-          <button id="runButton" class="primary-button" disabled>今週を実行</button>
-        </section>
+      <!-- フェーズ＆カウントダウン -->
+      <section class="phase-strip">
+        <p id="phaseText" class="phase-pill">種まき: まずは応援貯金。</p>
+        <div class="countdown" id="countdown" hidden></div>
+      </section>
 
+      <!-- 今週の変化 -->
+      <section class="week-changes empty" id="weekChanges" aria-live="polite"></section>
+
+      <!-- 今週の行動 -->
+      <section class="actions" aria-label="今週の行動">
+        <div class="actions-head">
+          <h2>🃏 今週の行動 <small>カードを3枚えらぶ</small></h2>
+          <div class="resources">
+            <span class="res" title="毎週使える持ち時間。行動で消費し、毎週回復します。">⏳ <strong><span id="timeNow">11</span></strong><small>/<span id="timeMax">11</span></small></span>
+            <span class="res" title="累積の資金。AI・LP・広告・飲み代などで減り、参加費で少し戻ります。">💰 <strong id="money">30</strong></span>
+            <span class="res picked"><strong id="selectedCount">0</strong><small>/3枚</small></span>
+          </div>
+        </div>
+        <div class="cards" id="cards"></div>
+      </section>
+
+      <!-- 実行ボタン（sticky） -->
+      <div class="run-dock">
+        <button id="runButton" class="primary-button" disabled>カードをあと3枚選ぶ</button>
+      </div>
+
+      <!-- くわしいステータス（折りたたみ） -->
+      <details class="stats-details">
+        <summary>📊 くわしいステータスを見る</summary>
+        <div class="status-list" id="statusList"></div>
+      </details>
+
+      <!-- 酒場ログ -->
+      <section class="logs" aria-label="酒場ログ">
+        <div class="logs-head">
+          <h2>🍺 酒場ログ</h2>
+          <button id="resetButton" class="ghost-button" type="button" title="最初からやり直す">↺ はじめから</button>
+        </div>
+        <ol class="log" id="log"></ol>
       </section>
     </main>
 
     <dialog id="resultDialog" class="result-dialog">
       <div class="result-box">
-        <p class="eyebrow">Final Rank</p>
+        <p class="result-eyebrow">FINAL RANK</p>
         <h2 id="resultRank">Aランク</h2>
         <h3 id="resultType">巻き込みタイプ診断</h3>
         <p id="resultPhase" class="result-phase"></p>
@@ -129,9 +136,9 @@
         </div>
         <div class="next-step">
           <p class="next-step-hint" id="resultNextHint">これをゲームで終わらせないために：</p>
-          <textarea id="nextStep" rows="2" placeholder="あなたの実際のイベントで、今週やる種まきを1つ書こう（例: 〇〇さんの投稿に応援コメントする／気になる人に事前相談する）"></textarea>
+          <textarea id="nextStep" rows="2" placeholder="あなたの実際のイベントで、今週やる種まきを1つ書こう（例: 〇〇さんの投稿に応援コメントする）"></textarea>
         </div>
-        <a id="ctaButton" class="cta-button" href="#" target="_blank" rel="noopener" hidden>BOOSTERで実際にやってみる →</a>
+        <a id="ctaButton" class="cta-button" href="#" target="_blank" rel="noopener" hidden>この感覚、リアルの集客でやってみる →</a>
         <div class="share-actions">
           <button id="shareX" class="share-btn x" type="button">𝕏 でシェア</button>
           <button id="shareImage" class="share-btn img" type="button">📷 結果カード画像</button>
@@ -141,8 +148,8 @@
           <a id="shareDownload" class="share-download" download="booster-result.png">画像を保存する</a>
         </div>
         <div class="result-actions">
-          <button id="copyResult" class="secondary-button">結果をコピー</button>
-          <button id="closeResult" class="primary-button">もう一度、酒場へ</button>
+          <button id="copyResult" class="secondary-button" type="button">結果をコピー</button>
+          <button id="closeResult" class="primary-button" type="button">もう一度、酒場へ</button>
         </div>
         <p id="copyStatus" class="copy-status" aria-live="polite"></p>
       </div>
@@ -150,24 +157,21 @@
 
     <dialog id="introDialog" class="intro-dialog">
       <div class="intro-box">
-        <p class="eyebrow">はじめての方へ</p>
-        <h2>30人を“みんなで”集める12週間</h2>
+        <div class="intro-hero">
+          <span class="intro-emoji">⛵</span>
+          <h2>30人を<em>“みんなで”</em>集める<br />12週間の航海へ</h2>
+        </div>
         <p class="intro-lead">
-          一人で告知して集めるゲームではありません。先に応援して（応援貯金）、ゆるく募集して（ゆるぼ）、反応をくれた人を次の主役にする（連鎖）——みんなで30人を集める流れを体験します。
+          一人で告知して集めるゲームじゃありません。<br />
+          <strong>先に応援して（応援貯金）→ ゆるく募集して（ゆるぼ）→ 反応をくれた人を次の主役に（連鎖）。</strong>
         </p>
         <ol class="intro-steps">
-          <li><strong>毎週、行動カードを3枚選んで「実行」</strong>。全12週で結果が出ます。</li>
-          <li>カードには<strong>⏳時間</strong>と<strong>💰お金</strong>のコストがあります。時間は毎週回復します。</li>
-          <li><strong>3つのフェーズ</strong>で進みます：<br />種まき（応援貯金）→ 仲間化（関わり方を渡す）→ 集客（連鎖でみんなで募集）。</li>
-          <li>覚えておく式はひとつだけ：<strong>反応 ＝ 言葉の力 × 信頼残高</strong>。</li>
+          <li><span class="step-emoji">🃏</span><div>毎週カードを<strong>3枚えらんで実行</strong>。全12週で結果が出ます。</div></li>
+          <li><span class="step-emoji">⏳</span><div>カードは<strong>時間とお金</strong>を使います。時間は毎週回復。</div></li>
+          <li><span class="step-emoji">🌱</span><div><strong>種まき → 仲間化 → 集客</strong>の3フェーズで進みます。</div></li>
         </ol>
-        <div class="intro-goals">
-          <span><strong>参加者</strong> 申し込んだ人</span>
-          <span><strong>応援者</strong> 支えてくれる人</span>
-          <span><strong>運営</strong> 役割を持つ仲間</span>
-          <span><strong>コアメンバー</strong> 自分ごとの仲間</span>
-        </div>
-        <button id="introStart" class="primary-button" type="button">酒場へ入る</button>
+        <p class="intro-formula">覚える式はひとつだけ<br /><strong>反応 ＝ 言葉の力 × 信頼残高</strong></p>
+        <button id="introStart" class="primary-button big" type="button">🍻 酒場へ入る</button>
       </div>
     </dialog>
 

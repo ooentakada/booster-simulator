@@ -1335,6 +1335,7 @@ function getRank() {
 }
 
 function render() {
+  document.body.dataset.phase = getPhase();
   els.week.textContent = state.week;
   els.attendees.textContent = state.people.attendees;
   els.supporters.textContent = state.people.supporters;
@@ -1481,17 +1482,18 @@ function renderCards() {
       const overTime = !selected && spent.time + (card.time || 0) > state.resources.timeMax;
       const overMoney = !selected && spent.money + (card.money || 0) > state.resources.money;
       const disabled = full || overTime || overMoney;
-      let reason = card.text;
-      if (overMoney) reason = "資金が足りません";
-      else if (overTime) reason = "今週の時間が足りません";
+      let lockReason = "";
+      if (overMoney) lockReason = "💰 資金が足りません";
+      else if (overTime) lockReason = "⏳ 今週の時間が足りません";
       const costLabel = `⏳${card.time || 0}${card.money ? ` 💰${card.money}` : ""}`;
       const tags = (cardEffect[card.id] || [])
         .map((t) => `<span class="tag ${t.includes("-") ? "tag-down" : "tag-up"}">${t}</span>`)
         .join("");
       return `
-        <button class="card-button ${selected ? "selected" : ""}" ${disabled ? "disabled" : ""} data-card="${card.id}" title="${reason}">
-          <div class="card-title"><span class="card-icon">${card.icon}</span><span class="card-name">${card.title}</span><span class="card-cost">${costLabel}</span></div>
-          <p>${card.text}</p>
+        <button class="card-button ${selected ? "selected" : ""}" ${disabled ? "disabled" : ""} data-card="${card.id}">
+          <div class="card-top"><span class="card-icon">${card.icon}</span><span class="card-name">${card.title}</span><span class="card-cost">${costLabel}</span></div>
+          <p class="card-text">${card.text}</p>
+          ${lockReason ? `<p class="card-lock">${lockReason}</p>` : ""}
           <div class="card-tags">${tags}</div>
         </button>
       `;
